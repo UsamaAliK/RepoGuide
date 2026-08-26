@@ -23,10 +23,39 @@ RepoGuide is your personal guide for learning codebases. Ask questions about how
 5. Answers include links to source files
 
 
+
+
+---
+
+## File Structure
+
+```
+RepoGuide/
+├── backend/
+│   ├── main.py          # FastAPI app entry point
+│   ├── config.py        # Configuration & environment variables
+│   ├── database.py      # Database setup & connection
+│   ├── models.py        # SQLAlchemy models
+│   ├── schemas.py       # Pydantic request/response schemas
+│   ├── github.py        # GitHub API integration
+│   ├── embeddings.py    # Vector embeddings
+│   ├── chunking.py      # Code chunking logic
+│   ├── llm.py           # LLM integration
+│   └── prompts.py       # Prompt templates
+├── frontend/
+│   ├── index.html       # Main HTML page
+│   ├── script.js        # Frontend logic
+│   └── style.css        # Styling
+├── .env                 # Environment variables
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
+
+---
+
 ## Status
 
 🚧 Work in Progress - Building core functionality
-
----
 
 More details coming soon.
