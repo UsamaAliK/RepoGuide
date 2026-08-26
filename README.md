@@ -22,12 +22,6 @@ RepoGuide is your personal guide for learning codebases. Ask questions about how
 4. AI finds relevant code and explains it
 5. Answers include links to source files
 
-## Tech Stack
-
-- FastAPI (backend)
-- Claude API (explanations)
-- Vector embeddings (understanding)
-- React or HTML (frontend)
 
 ## Status
 
