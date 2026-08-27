@@ -3,6 +3,7 @@ import zipfile
 import tempfile
 import os
 from fastapi import HTTPException
+from .file_filter import filter_files
 
 
 def parse_github_url(github_url: str) -> dict:
@@ -47,7 +48,7 @@ async def download_repo_zip(owner: str, repo: str, branch: str) -> dict:
     temp_dir = tempfile.mkdtemp()
     zip_path = os.path.join(temp_dir, f"{repo}.zip")
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(follow_redirects=True) as client:
         async with client.stream("GET", url) as response:
             response.raise_for_status()
 
@@ -70,8 +71,10 @@ async def download_repo_zip(owner: str, repo: str, branch: str) -> dict:
     for dirpath, _, filenames in os.walk(root):
         for filename in filenames:
             file_paths.append(os.path.join(dirpath, filename))
+    filtered=filter_files(file_paths,root)
 
     return {
+        "filtered files":filtered,
         "root": root,
         "files": file_paths
     }
