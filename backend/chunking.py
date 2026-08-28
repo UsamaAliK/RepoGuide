@@ -1,0 +1,101 @@
+import os
+from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
+
+
+LANGUAGE_MAP = {
+    ".py": Language.PYTHON,
+    ".js": Language.JS,
+    ".jsx": Language.JS,
+    ".mjs": Language.JS,
+    ".cjs": Language.JS,
+    ".ts": Language.TS,
+    ".tsx": Language.TS,
+    ".go": Language.GO,
+    ".rs": Language.RUST,
+    ".java": Language.JAVA,
+    ".rb": Language.RUBY,
+    ".php": Language.PHP,
+    ".c": Language.CPP,
+    ".cc": Language.CPP,
+    ".cpp": Language.CPP,
+    ".h": Language.CPP,
+    ".hpp": Language.CPP,
+    ".cs": Language.CSHARP,
+    ".swift": Language.SWIFT,
+    ".kt": Language.KOTLIN,
+    ".scala": Language.SCALA,
+    ".sh": Language.POWERSHELL,
+    ".bash": Language.POWERSHELL,
+    ".zsh": Language.POWERSHELL,
+    ".sql": Language.PROTO,
+    ".html": Language.HTML,
+    ".htm": Language.HTML,
+    ".md": Language.MARKDOWN,
+    ".markdown": Language.MARKDOWN,
+    ".rst": Language.RST,
+    ".lua": Language.LUA,
+    ".pl": Language.PERL,
+    ".pm": Language.PERL,
+}
+
+
+def detect_language(relative_path: str) -> Language | None:
+    return LANGUAGE_MAP.get(os.path.splitext(relative_path)[1])
+
+
+
+def line_range(text: str, offset: int) -> tuple[int, int]:
+    """compute start/end line of a chunk given its start offset in the file"""
+    start_line=text.count("\n",0,offset)+1
+    end_line=start_line+text[offset:].count("\n")
+    return start_line,end_line
+
+
+def split_code(text:str,chunk_size:int,chunk_overlap:int,relative_path:str):
+    language=detect_language(relative_path)
+    splitter=(
+        RecursiveCharacterTextSplitter.from_language(language,chunk_size=chunk_size,
+         chunk_overlap=chunk_overlap)
+         
+         if language else 
+         RecursiveCharacterTextSplitter(separators=["\n\n","\n"," ",""],chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap)
+
+    )
+    return splitter.split_text(text)
+
+
+def chunk_files(filter_files:list[str],commit_sha:str,owner:str,
+                repo:str,chunk_size:int=600,chunk_overlap:int=200)->list[dict]:
+    
+    chunk=[]
+    for file in filter_files:
+        
+        try:
+            with open(file["path"],'r',encoding="utf-8",errors="ignore") as f:
+                text=f.read()
+        except OSError:
+            continue
+        if not text.strip():
+            continue
+        relative_path=file["relative_path"]
+        parts=split_code(text,chunk_size,chunk_overlap,relative_path)
+        offset=0
+        for part in parts:
+            start_line,end_line=line_range(text,offset)
+            offset=text.find(part,offset)+len(part)
+            chunk.append({
+                "text":part,
+                "metadata":{
+                    "owner":owner,
+                    "repo":repo,
+                    "commit_sha":commit_sha,
+                    "file_path":relative_path,
+                    "start_line":start_line,
+                    "end_line":end_line
+                }
+            })
+
+    return chunk
+
+
