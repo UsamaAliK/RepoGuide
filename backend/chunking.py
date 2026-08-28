@@ -44,11 +44,11 @@ def detect_language(relative_path: str) -> Language | None:
 
 
 
-def line_range(text: str, offset: int) -> tuple[int, int]:
-    """compute start/end line of a chunk given its start offset in the file"""
-    start_line=text.count("\n",0,offset)+1
-    end_line=start_line+text[offset:].count("\n")
-    return start_line,end_line
+def line_range(text: str, start_offset: int,end_offset:int) -> tuple[int, int]:
+    """Return the start and end line numbers of a chunk.""" 
+    start_line = text.count("\n", 0, start_offset) + 1 
+    end_line = text.count("\n", 0, end_offset) + 1
+    return start_line, end_line
 
 
 def split_code(text:str,chunk_size:int,chunk_overlap:int,relative_path:str):
@@ -66,7 +66,7 @@ def split_code(text:str,chunk_size:int,chunk_overlap:int,relative_path:str):
 
 
 def chunk_files(filter_files:list[str],commit_sha:str,owner:str,
-                repo:str,chunk_size:int=600,chunk_overlap:int=200)->list[dict]:
+                repo:str,chunk_size:int=1200,chunk_overlap:int=200)->list[dict]:
     
     chunk=[]
     for file in filter_files:
@@ -82,8 +82,11 @@ def chunk_files(filter_files:list[str],commit_sha:str,owner:str,
         parts=split_code(text,chunk_size,chunk_overlap,relative_path)
         offset=0
         for part in parts:
-            start_line,end_line=line_range(text,offset)
-            offset=text.find(part,offset)+len(part)
+            start_offset = text.find(part, offset)
+            if start_offset == -1: continue
+            end_offset = start_offset + len(part)
+            start_line, end_line = line_range( text, start_offset, end_offset )
+            offset = end_offset
             chunk.append({
                 "text":part,
                 "metadata":{
