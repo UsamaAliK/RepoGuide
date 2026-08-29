@@ -1,4 +1,5 @@
 import os
+import logging
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 
 
@@ -24,10 +25,6 @@ LANGUAGE_MAP = {
     ".swift": Language.SWIFT,
     ".kt": Language.KOTLIN,
     ".scala": Language.SCALA,
-    ".sh": Language.POWERSHELL,
-    ".bash": Language.POWERSHELL,
-    ".zsh": Language.POWERSHELL,
-    ".sql": Language.PROTO,
     ".html": Language.HTML,
     ".htm": Language.HTML,
     ".md": Language.MARKDOWN,
@@ -65,11 +62,11 @@ def split_code(text:str,chunk_size:int,chunk_overlap:int,relative_path:str):
     return splitter.split_text(text)
 
 
-def chunk_files(filter_files:list[str],commit_sha:str,owner:str,
+def chunk_files(files:list[dict],commit_sha:str,owner:str,
                 repo:str,chunk_size:int=1200,chunk_overlap:int=200)->list[dict]:
     
     chunk=[]
-    for file in filter_files:
+    for file in files:
         
         try:
             with open(file["path"],'r',encoding="utf-8",errors="ignore") as f:
@@ -80,13 +77,19 @@ def chunk_files(filter_files:list[str],commit_sha:str,owner:str,
             continue
         relative_path=file["relative_path"]
         parts=split_code(text,chunk_size,chunk_overlap,relative_path)
-        offset=0
+        prev_end=0
         for part in parts:
-            start_offset = text.find(part, offset)
-            if start_offset == -1: continue
+            # consecutive chunks overlap by up to chunk_overlap chars, so the
+            # next chunk may start before the previous one ended.
+            start_offset = text.find(part, max(0, prev_end - chunk_overlap))
+            if start_offset == -1:
+                logging.getLogger(__name__).warning(
+                    "could not locate chunk inside %s — skipping", relative_path
+                )
+                continue
             end_offset = start_offset + len(part)
             start_line, end_line = line_range( text, start_offset, end_offset )
-            offset = end_offset
+            prev_end = end_offset
             chunk.append({
                 "text":part,
                 "metadata":{
