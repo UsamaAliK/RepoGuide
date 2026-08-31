@@ -63,7 +63,7 @@ def split_code(text:str,chunk_size:int,chunk_overlap:int,relative_path:str):
 
 
 def chunk_files(files:list[dict],commit_sha:str,owner:str,
-                repo:str,chunk_size:int=1200,chunk_overlap:int=200)->list[dict]:
+                repo:str,chunk_size:int=1400,chunk_overlap:int=200)->list[dict]:
     
     chunk=[]
     for file in files:

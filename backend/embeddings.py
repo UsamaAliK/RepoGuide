@@ -1,6 +1,5 @@
 import google.generativeai as genai
 import asyncio
-import os
 from .config import GEMINI_API_KEY,EMBEDDING_MODEL,EMBEDDING_DIMENSIONS,EMBEDDING_BATCH_SIZE,EMBEDDING_MAX_CONCURRENCY
 
 genai.configure(api_key=GEMINI_API_KEY)
@@ -29,7 +28,7 @@ async def embed_text(texts: list[str], task_type="RETRIEVAL_DOCUMENT",
         return [v for result in results for v in result]
 
 async def embed_query(text:str,task_type="RETRIEVAL_QUERY")->list[float]:
-       return (await embed_text([text],task_type=task_type))
+       return (await embed_text([text],task_type=task_type))[0]
 
                
 
