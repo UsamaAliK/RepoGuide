@@ -1,9 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from .schemas import RepoRequest, RepoResponse
-from .github import fetch_repo_files
-from .chunking import chunk_files
-from .embeddings import generate_embeddings
-from .database import store_chunks
+import requests
+from .schemas import RepoRequest, RepoResponse,AskRequest,AskResponse
+from .rag import index_repo, ask
+
 
 app = FastAPI()
 
@@ -14,5 +13,31 @@ async def root():
 
 
 
+@app.post("/index", response_model=RepoResponse)
+async def index(request: RepoRequest):
+    try:
+        result = await index_repo(request.url)
+        return RepoResponse(
+            url=request.url,
+            status="success",
+            message="Repository indexed successfully",
+            file_count=result["file_count"],
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/ask", response_model=AskResponse)
+async def ask_question(request: AskRequest):
+    try:
+        result = await ask(request.question, request.url)
+        return AskResponse(
+            answer=result["answer"],
+            sources=result["sources"],
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
