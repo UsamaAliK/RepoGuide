@@ -151,6 +151,7 @@ activemq-data/
 .env
 .envrc
 .venv
+.venv311
 env/
 venv/
 ENV/
@@ -202,6 +203,10 @@ cython_debug/
 # .vscode/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
+
+# Frontend application source (the Python template above ignores any lib/ directory)
+!frontend/lib/
+!frontend/lib/**
 
 # Ruff stuff:
 .ruff_cache/
@@ -289,3 +294,8 @@ desktop.ini
 
 # RepoGuide
 chroma_db/
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+.env*.local
