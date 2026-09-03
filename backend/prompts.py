@@ -1,4 +1,6 @@
 
+# --- LLM system prompt + user prompt builder ---
+
 SYSTEM_PROMPT = """
 You are a repository-aware coding tutor.
 
@@ -75,6 +77,7 @@ LEARNING STYLE:
 
 
 def build_answer_prompt(question: str, context: str) -> str:
+    """Build the user-facing prompt: repo context + question + instructions."""
     return f"""
 Repository context:
 

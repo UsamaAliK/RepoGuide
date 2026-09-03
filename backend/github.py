@@ -5,6 +5,7 @@ import os
 from fastapi import HTTPException
 from .file_filter import filter_files
 
+# --- GitHub API + ZIP download helpers ---
 
 def parse_github_url(github_url: str) -> dict:
     """extract owner and repo name from url"""

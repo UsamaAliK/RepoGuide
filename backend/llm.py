@@ -1,15 +1,19 @@
-import google.generativeai as genai
-from google.generativeai import GenerativeModel,generative_models
+from google import genai
+from google.genai import types
 from .prompts import SYSTEM_PROMPT,build_answer_prompt
 from .config import GEMINI_API_KEY,LLM_MODEL
 
+# --- Gemini LLM client ---
 
-
-genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def generate_answer(question:str,context:str)->str:
-    model=GenerativeModel(LLM_MODEL,system_instruction=SYSTEM_PROMPT)
-    response=model.generate_content(build_answer_prompt(question,context))
+    """Send question + repo context to Gemini, return answer text."""
+    response = client.models.generate_content(
+        model=LLM_MODEL,
+        contents=build_answer_prompt(question,context),
+        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
+    )
     return response.text
 
 

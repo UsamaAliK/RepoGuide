@@ -1,37 +1,43 @@
-import google.generativeai as genai
 import asyncio
-from .config import GEMINI_API_KEY,EMBEDDING_MODEL,EMBEDDING_DIMENSIONS,EMBEDDING_BATCH_SIZE,EMBEDDING_MAX_CONCURRENCY
+import logging
+from sentence_transformers import SentenceTransformer
+from .config import EMBEDDING_MODEL, EMBEDDING_DIMENSIONS
 
-genai.configure(api_key=GEMINI_API_KEY)
+logger = logging.getLogger(__name__)
 
-def embed_batch(text:list[str],task_type="RETRIEVAL_DOCUMENT")->list[list[float]]:
-    
-    
-        result=genai.embed_content( model=EMBEDDING_MODEL,
-                content=text,
-                output_dimensionality=EMBEDDING_DIMENSIONS,
-                task_type=task_type
-                )
-        return result["embedding"]
+# --- local sentence-transformers model (loaded once, lazy) ---
 
-async def embed_text(texts: list[str], task_type="RETRIEVAL_DOCUMENT",
-                     batch_size=EMBEDDING_BATCH_SIZE,
-                     max_concurrency=EMBEDDING_MAX_CONCURRENCY) -> list[list[float]]:
-        if not texts:
-            return []
-        batch=[texts[i:i+batch_size]for i in range(0,len(texts),batch_size)]    
-        semaphore=asyncio.Semaphore(max_concurrency)
-        async def run(batch:list[str])->list[list]:
-               async with semaphore:
-                      return await asyncio.to_thread(embed_batch,batch,task_type)
-        results=await asyncio.gather(*(run(b)for b in batch))
-        return [v for result in results for v in result]
+_model = None
 
-async def embed_query(text:str,task_type="RETRIEVAL_QUERY")->list[float]:
-       return (await embed_text([text],task_type=task_type))[0]
+def _get_model():
+    global _model
+    if _model is None:
+        logger.info(f"Loading local {EMBEDDING_DIMENSIONS}-dim embedding model: {EMBEDDING_MODEL}")
+        _model = SentenceTransformer(EMBEDDING_MODEL)
+    return _model
 
-               
+# --- sync batch embed (called via asyncio.to_thread) ---
 
+def embed_batch(texts: list[str]) -> list[list[float]]:
+    """Embed a batch of texts locally with {dim}-dimension vectors."""
+    if not texts:
+        return []
+    model = _get_model()
+    embeddings = model.encode(texts, normalize_embeddings=True)
+    return [e.tolist() for e in embeddings]
 
+# --- async wrappers ---
 
+async def embed_text(
+    texts: list[str],
+    **kwargs
+) -> list[list[float]]:
+    """Embed texts asynchronously using local model."""
+    if not texts:
+        return []
+    return await asyncio.to_thread(embed_batch, texts)
 
+async def embed_query(text: str) -> list[float]:
+    """Embed a single query."""
+    result = await embed_text([text])
+    return result[0] if result else []

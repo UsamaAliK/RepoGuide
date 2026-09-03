@@ -1,18 +1,33 @@
 import chromadb
 from .config import CHROMA_PERSIST_DIR
 
+# --- chroma setup (single collection for all repos) ---
 
 client=chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
 collection=client.get_or_create_collection(name="code_chunks")
 
+# --- queries ---
+
 def query_chunks(owner:str,repo:str,embedding:list[float],k:int=5):
+    """Semantic search: return top-k chunks for a repo by embedding similarity."""
     result=collection.query(query_embeddings=[embedding],
                             n_results=k,
                             where={"$and":[{"owner":owner},{"repo":repo}]},
                             include=["documents","metadatas","distances"])
     return result["documents"][0],result["metadatas"][0],result["distances"][0]
 
+def get_file_chunks(owner:str,repo:str,file_path:str):
+    """Return all chunks stored for a single file (used by neighbor expansion)."""
+    result=collection.get(
+        where={"$and":[{"owner":owner},{"repo":repo},{"file_path":file_path}]},
+        include=["documents","metadatas"],
+    )
+    return result["documents"],result["metadatas"]
+
+# --- writes ---
+
 def add_chunks(chunks:list[dict],embeddings:list[list[float]]):
+    """Store chunks + embeddings. Deletes existing repo chunks first (re-index safe)."""
     if not chunks:
         return
     if len(chunks)!=len(embeddings):

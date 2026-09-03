@@ -3,6 +3,7 @@ import requests
 from .schemas import RepoRequest, RepoResponse,AskRequest,AskResponse
 from .rag import index_repo, ask
 
+# --- FastAPI routes ---
 
 app = FastAPI()
 
@@ -11,7 +12,7 @@ app = FastAPI()
 async def root():
     return {"message": "RepoGuide running"}
 
-
+# POST /index — download, filter, chunk, embed, store a repo
 
 @app.post("/index", response_model=RepoResponse)
 async def index(request: RepoRequest):
@@ -28,6 +29,7 @@ async def index(request: RepoRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# POST /ask — embed question → search chroma → neighbors → LLM → answer + sources
 
 @app.post("/ask", response_model=AskResponse)
 async def ask_question(request: AskRequest):
