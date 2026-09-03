@@ -24,7 +24,7 @@ class Source(BaseModel):
     start_line: int
     end_line: int
     commit_sha: str
-    distance: float
+    score: float
 
 class AskResponse(BaseModel):
     """POST /ask — response: answer text + source links"""

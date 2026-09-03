@@ -40,12 +40,20 @@ def filter_files(file_path:list[str],root)->list[dict]:
         ".vscode", ".idea", ".vs",
         "coverage", ".pytest_cache", ".mypy_cache"
     ]
+    # lockfiles and generated artifacts never carry useful code/docs
+    excluded_files = {
+        "package-lock.json", "pnpm-lock.yaml", "yarn.lock",
+        "poetry.lock", "Gemfile.lock", "Cargo.lock",
+    }
     filtered=[]
     MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
     for path in file_path:
         # skip ignored directories
         if any(ignored in path.split(os.sep) for ignored in ignored_dirs ):
+            continue
+        # skip known noise files (lockfiles, etc.)
+        if os.path.basename(path) in excluded_files:
             continue
         # skip files with unsupported extensions
         if not any(path.endswith(allowed) for allowed in allowed_extensions):

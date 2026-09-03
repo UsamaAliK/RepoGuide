@@ -1,5 +1,5 @@
 import asyncio
-import time
+from .reranking import rerank
 import json
 from .config import EMBEDDING_DIMENSIONS
 import urllib.request
@@ -9,7 +9,7 @@ from .chunking import chunk_files
 from .embeddings import embed_text,embed_batch
 from .vector_storage import add_chunks,query_chunks,get_file_chunks
 
-TOP_K=5
+TOP_K=15
 
 # --- helpers ---
 
@@ -37,7 +37,7 @@ async def index_repo(url:str)->dict:
     if not chunks:
         raise ValueError("Repositry produced no chunks")
     texts=[c["text"] for c in chunks]
-    vectors=await embed_text(texts,task_type="RETRIEVAL_DOCUMENT")
+    vectors=await embed_text(texts)
     if not vectors or len(vectors) != len(chunks) or not all(len(v) == EMBEDDING_DIMENSIONS for v in vectors):
         raise ValueError(f"Embedding count/dimension mismatch: {len(chunks)} chunks vs {len(vectors)} vectors")
     await asyncio.to_thread(add_chunks, chunks, vectors)
@@ -109,7 +109,7 @@ async def ask(question: str, url: str, top_k: int = TOP_K) -> dict:
 
     # embed the user's question
     qvec = await asyncio.to_thread(
-        lambda: embed_batch([question], task_type="RETRIEVAL_QUERY")[0]
+        lambda: embed_batch([question])[0]
     )
 
     # semantic search — top-k most similar chunks
@@ -127,7 +127,7 @@ async def ask(question: str, url: str, top_k: int = TOP_K) -> dict:
     metas = metas + n_metas
     all_distances = list(distances) + [0] * len(n_docs)
 
-    # dedupe by location and cap total chunks at 10
+    # dedupe by location
     seen = set()
     deduped = []
     for d, m, dist in zip(docs, metas, all_distances):
@@ -136,14 +136,22 @@ async def ask(question: str, url: str, top_k: int = TOP_K) -> dict:
             continue
         seen.add(key)
         deduped.append((d, m, dist))
-        if len(deduped) >= 10:
-            break
     docs = [d for d, _, _ in deduped]
     metas = [m for _, m, _ in deduped]
     deduped_distances = [dist for _, _, dist in deduped]
 
+    # Score ALL candidates (neighbors included) with Jina, then keep the top 8.
+    # This gives neighbors a real relevance score instead of the placeholder 0.
+    reranked = await rerank(question, docs, len(docs))
+    docs = [docs[i] for i, _ in reranked]
+    metas = [metas[i] for i, _ in reranked]
+    deduped_distances = [score for _, score in reranked]
+    # trim to top 8 most relevant chunks for the LLM context
+    docs, metas, deduped_distances = docs[:8], metas[:8], deduped_distances[:8]
+
     # build context and get LLM answer
     context = "\n\n".join(docs)
+
     answer = await asyncio.to_thread(generate_answer, question, context)
 
     # build source links from chunk metadata
@@ -153,7 +161,7 @@ async def ask(question: str, url: str, top_k: int = TOP_K) -> dict:
             "start_line": m["start_line"],
             "end_line": m["end_line"],
             "commit_sha": m["commit_sha"],
-            "distance": round(d, 5),
+            "score": round(d, 5),
         }
         for m, d in zip(metas, deduped_distances)
     ]
