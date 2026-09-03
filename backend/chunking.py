@@ -2,6 +2,7 @@ import os
 import logging
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 
+# --- extension → langchain Language mapping (for smart splitting) ---
 
 LANGUAGE_MAP = {
     ".py": Language.PYTHON,
@@ -37,6 +38,7 @@ LANGUAGE_MAP = {
 
 
 def detect_language(relative_path: str) -> Language | None:
+    """Map file extension to a Language enum for the text splitter."""
     return LANGUAGE_MAP.get(os.path.splitext(relative_path)[1])
 
 
@@ -49,6 +51,7 @@ def line_range(text: str, start_offset: int,end_offset:int) -> tuple[int, int]:
 
 
 def split_code(text:str,chunk_size:int,chunk_overlap:int,relative_path:str):
+    """Split file text into chunks using language-aware or generic splitter."""
     language=detect_language(relative_path)
     splitter=(
         RecursiveCharacterTextSplitter.from_language(language,chunk_size=chunk_size,
@@ -61,6 +64,8 @@ def split_code(text:str,chunk_size:int,chunk_overlap:int,relative_path:str):
     )
     return splitter.split_text(text)
 
+
+# --- main entry point: split all files → chunks with line-number metadata ---
 
 def chunk_files(files:list[dict],commit_sha:str,owner:str,
                 repo:str,chunk_size:int=1400,chunk_overlap:int=200)->list[dict]:
