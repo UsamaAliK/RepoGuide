@@ -1,0 +1,194 @@
+{
+  "repo": "https://github.com/alimasoodofficial/rec-lms-app",
+  "results": [
+    {
+      "question": "List the three demo accounts and their passwords used for login.",
+      "difficulty": "easy",
+      "answer": "The repository context provides three demo accounts with their respective emails and passwords:\n\n1.  **Email:** `admin@demo.com`\n    **Password:** `abc123`\n\n2.  **Email:** `instructor@demo.com`\n    **Password:** `abc123`\n\n3.  **Email:** `student@demo.com`\n    **Password:** `abc123`",
+      "sources": [
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 1,
+          "end_line": 39,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.397
+        },
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 41,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.37388
+        },
+        {
+          "file_path": "app/register/page.tsx",
+          "start_line": 47,
+          "end_line": 79,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.23935
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 20,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.15922
+        },
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 97,
+          "end_line": 111,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.12592
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 163,
+          "end_line": 187,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.11437
+        },
+        {
+          "file_path": "components/layout/Navbar.tsx",
+          "start_line": 70,
+          "end_line": 97,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.10375
+        },
+        {
+          "file_path": "app/register/page.tsx",
+          "start_line": 253,
+          "end_line": 272,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.10088
+        }
+      ]
+    },
+    {
+      "question": "How does the AuthContext restore a user session when the app first loads?",
+      "difficulty": "medium",
+      "answer": "The `AuthContext` restores a user session when the app first loads by checking the browser's `localStorage`.\n\nHere's a step-by-step explanation:\n\n1.  **`AuthProvider` Initialization**: The `AuthProvider` component, which wraps the application to provide authentication context, initializes its state. It uses `useState` hooks for `user` (initially `null`) and `isInitialized` (initially `false`).\n\n    ```typescript\n    export function AuthProvider({ children }: { children: React.ReactNode }) {\n      const [user, setUser] = useState<User | null>(null);\n      const [isInitialized, setIsInitialized] = useState(false);\n      // ...\n    ```\n\n2.  **`useEffect` for Session Check**: When the `AuthProvider` component mounts (i.e., when the app first loads), a `useEffect` hook runs. This hook's purpose is to check for a previously saved user session.\n\n    ```typescript\n    useEffect(() => {\n      // Check localStorage for user on mount\n      const savedUser = localStorage.getItem(\"rec_user\");\n      if (savedUser) {\n        setUser(JSON.parse(savedUser));\n      }\n      setIsInitialized(true);\n    }, []); // Empty dependency array means it runs once on mount\n    ```\n\n3.  **Retrieve from `localStorage`**: Inside the `useEffect`, it attempts to retrieve an item named `\"rec_user\"` from `localStorage`.\n\n    ```typescript\n    const savedUser = localStorage.getItem(\"rec_user\");\n    ```\n\n4.  **Set User State**: If a `savedUser` item is found in `localStorage`, it means there was a previous session. The stored string is parsed from JSON back into a JavaScript object, and this object is then used to set the `user` state within the `AuthProvider`.\n\n    ```typescript\n    if (savedUser) {\n      setUser(JSON.parse(savedUser));\n    }\n    ```\n\n5.  **Mark as Initialized**: Finally, the `isInitialized` state is set to `true`, indicating that the authentication context has completed its initial setup and checked for a saved session.\n\n    ```typescript\n    setIsInitialized(true);\n    ```\n\nThis mechanism ensures that if a user has logged in previously, their session information (email, role, name) is automatically loaded when they revisit the application, without requiring them to log in again immediately.",
+      "sources": [
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 60,
+          "end_line": 73,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.40828
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 95,
+          "end_line": 98,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.3675
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 12,
+          "end_line": 18,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.31997
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 1,
+          "end_line": 17,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.2934
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 20,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.29018
+        },
+        {
+          "file_path": "components/layout/Navbar.tsx",
+          "start_line": 1,
+          "end_line": 13,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.26741
+        },
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 1,
+          "end_line": 39,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.22542
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 1,
+          "end_line": 10,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.22406
+        }
+      ]
+    },
+    {
+      "question": "Trace the complete login flow: from form submission in the login page, through the demo-account and localStorage checks, to how the session is set and the user is redirected.",
+      "difficulty": "hard",
+      "answer": "The login flow begins on the `LoginPage` component when a user submits the login form.\n\nHere's a step-by-step breakdown:\n\n1.  **Form Submission and Initial Actions**:\n    *   The login form is handled by the `handleLogin` asynchronous function, which is triggered by `onSubmit={handleLogin}` on the form element.\n    *   Upon submission, `e.preventDefault()` is called to prevent the default form submission behavior.\n    *   `setIsLoading(true)` is set to indicate a loading state, and `setError(\"\")` clears any previous errors.\n    *   A simulated delay of 1500 milliseconds occurs: `await new Promise((resolve) => setTimeout(resolve, 1500));`.\n\n2.  **Demo Account Checks**:\n    The system first checks for specific hardcoded demo accounts:\n    *   If `email` is `\"admin@demo.com\"` and `password` is `\"abc123\"`:\n        *   The `login` function (obtained from `useAuth`) is called with `email` and role `\"admin\"`.\n        *   The user is redirected to `\"/dashboard/admin\"` using `router.push()`.\n        *   The function returns, ending the login attempt.\n    *   If `email` is `\"instructor@demo.com\"` and `password` is `\"abc123\"`:\n        *   The `login` function is called with `email` and role `\"instructor\"`.\n        *   The user is redirected to `\"/dashboard/instructor\"` using `router.push()`.\n        *   The function returns.\n    *   If `email` is `\"student@demo.com\"` and `password` is `\"abc123\"`:\n        *   The `login` function is called with `email` and role `\"student\"`.\n        *   The user is redirected to `\"/dashboard/student\"` using `router.push()`.\n        *   The function returns.\n\n3.  **Recently Registered User Check (localStorage)**:\n    *   If none of the hardcoded demo accounts match, the system checks `localStorage` for a key named `\"rec_registered_user\"`. This key is set during the registration process to simulate persistence for demo users.\n    *   If `savedUser` exists in `localStorage`, it is parsed from JSON.\n    *   If the entered `email` and `password` match the `email` and `password` stored in the `registeredUser` object:\n        *   The `login` function is called with `registeredUser.email`, `registeredUser.role`, and `registeredUser.fullName`.\n        *   The user is then redirected based on their `registeredUser.role`:\n            *   `\"admin\"`: `router.push(\"/dashboard/admin\")`\n            *   `\"instructor\"`: `router.push(\"/dashboard/instructor\")`\n            *   Otherwise (default to student): `router.push(\"/dashboard/student\")`\n        *   The function returns.\n\n4.  **Default Login Behavior**:\n    *   If none of the above conditions (hardcoded demo accounts or `localStorage` registered user) are met, a default login occurs:\n        *   The `login` function is called with the entered `email` and a default role of `\"student\"`.\n        *   The user is redirected to `\"/dashboard/student\"` using `router.push()`.\n\n5.  **Session Setting (`login` function in `AuthContext`)**:\n    *   The `login` function is part of the `AuthContext` and is responsible for establishing the user session.\n    *   It first determines a `name` for the user. If `customName` is provided, it's used. Otherwise, it defaults to \"Guest User\" or assigns \"Admin User\", \"Instructor User\", or \"Student User\" based on the `email` or `role`.\n    *   A `userData` object `{ email, role, name }` is created.\n    *   The user's state is updated: `setUser(userData)`.\n    *   The user data is stored in `localStorage` under the key `\"rec_user\"`: `localStorage.setItem(\"rec_user\", JSON.stringify(userData))`. This provides persistence across browser sessions.\n    *   Finally, `router.refresh()` is called to re-render pages that might depend on the authentication state.\n\nIn summary, the login process prioritizes hardcoded demo accounts, then checks for recently registered users stored in `localStorage`, and finally falls back to a default student login. In all successful login paths, the `login` function is called to update the application's authentication state and persist user data in `localStorage`, followed by a redirection to the appropriate dashboard.",
+      "sources": [
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 41,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.603
+        },
+        {
+          "file_path": "app/register/page.tsx",
+          "start_line": 47,
+          "end_line": 79,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.51086
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 20,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.47025
+        },
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 1,
+          "end_line": 39,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.34158
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 12,
+          "end_line": 18,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.24945
+        },
+        {
+          "file_path": "app/register/page.tsx",
+          "start_line": 1,
+          "end_line": 49,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.20818
+        },
+        {
+          "file_path": "components/layout/Navbar.tsx",
+          "start_line": 19,
+          "end_line": 41,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.20056
+        },
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 97,
+          "end_line": 111,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.19931
+        }
+      ]
+    }
+  ]
+}

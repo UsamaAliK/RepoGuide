@@ -1,0 +1,439 @@
+{
+  "repo": "https://github.com/alimasoodofficial/rec-lms-app",
+  "results": [
+    {
+      "question": "Which role (admin, instructor, or student) does the app default to when a login doesn't match a demo account?",
+      "difficulty": "easy",
+      "sources": [
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 41,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.63159
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 19,
+          "end_line": 21,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.43063
+        },
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 1,
+          "end_line": 39,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.41064
+        },
+        {
+          "file_path": "components/dashboard/DashboardLayoutWrapper.tsx",
+          "start_line": 1,
+          "end_line": 44,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.26741
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 20,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.23652
+        },
+        {
+          "file_path": "app/register/page.tsx",
+          "start_line": 47,
+          "end_line": 79,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.2227
+        },
+        {
+          "file_path": "app/dashboard/instructor/settings/page.tsx",
+          "start_line": 1,
+          "end_line": 17,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.17781
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 12,
+          "end_line": 18,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.15508
+        }
+      ]
+    },
+    {
+      "question": "What localStorage keys does the app use for saving the session and a newly registered user?",
+      "difficulty": "easy",
+      "sources": [
+        {
+          "file_path": "app/register/page.tsx",
+          "start_line": 47,
+          "end_line": 79,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.37296
+        },
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 41,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.30404
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 20,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.17329
+        },
+        {
+          "file_path": "components/layout/Navbar.tsx",
+          "start_line": 1,
+          "end_line": 13,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.16238
+        },
+        {
+          "file_path": "components/layout/Navbar.tsx",
+          "start_line": 70,
+          "end_line": 97,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.10819
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 1,
+          "end_line": 10,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.09947
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 1,
+          "end_line": 17,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.09401
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 12,
+          "end_line": 18,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.09138
+        }
+      ]
+    },
+    {
+      "question": "How are course details displayed on the course detail page, and where does the course data come from?",
+      "difficulty": "medium",
+      "sources": [
+        {
+          "file_path": "app/dashboard/instructor/courses/page.tsx",
+          "start_line": 95,
+          "end_line": 114,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.25833
+        },
+        {
+          "file_path": "app/dashboard/admin/courses/page.tsx",
+          "start_line": 91,
+          "end_line": 111,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.25833
+        },
+        {
+          "file_path": "app/courses/[id]/page.tsx",
+          "start_line": 410,
+          "end_line": 416,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.25683
+        },
+        {
+          "file_path": "app/dashboard/student/results/page.tsx",
+          "start_line": 32,
+          "end_line": 36,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.19437
+        },
+        {
+          "file_path": "components/home/FeaturedCourses.tsx",
+          "start_line": 82,
+          "end_line": 86,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.19315
+        },
+        {
+          "file_path": "app/dashboard/instructor/settings/page.tsx",
+          "start_line": 98,
+          "end_line": 113,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.18359
+        },
+        {
+          "file_path": "app/dashboard/student/page.tsx",
+          "start_line": 85,
+          "end_line": 97,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.17217
+        },
+        {
+          "file_path": "app/dashboard/instructor/courses/page.tsx",
+          "start_line": 130,
+          "end_line": 152,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.16776
+        }
+      ]
+    },
+    {
+      "question": "What does the logout function do step by step?",
+      "difficulty": "medium",
+      "sources": [
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 41,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.18595
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 1,
+          "end_line": 10,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.17217
+        },
+        {
+          "file_path": "components/layout/Navbar.tsx",
+          "start_line": 1,
+          "end_line": 13,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.1561
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 60,
+          "end_line": 73,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.15508
+        },
+        {
+          "file_path": "components/layout/Navbar.tsx",
+          "start_line": 119,
+          "end_line": 125,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.14805
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 12,
+          "end_line": 18,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.14034
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 1,
+          "end_line": 17,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.12169
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 95,
+          "end_line": 98,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.11596
+        }
+      ]
+    },
+    {
+      "question": "What actions are available in the admin users page and what data does each user record contain?",
+      "difficulty": "medium",
+      "sources": [
+        {
+          "file_path": "app/dashboard/instructor/sessions/page.tsx",
+          "start_line": 109,
+          "end_line": 116,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.32681
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 19,
+          "end_line": 21,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.27048
+        },
+        {
+          "file_path": "app/dashboard/admin/users/page.tsx",
+          "start_line": 143,
+          "end_line": 150,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.25238
+        },
+        {
+          "file_path": "app/dashboard/admin/analytics/page.tsx",
+          "start_line": 1,
+          "end_line": 7,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.20181
+        },
+        {
+          "file_path": "components/ui/lms-demo.html",
+          "start_line": 145,
+          "end_line": 157,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.20056
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 163,
+          "end_line": 187,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.19806
+        },
+        {
+          "file_path": "app/dashboard/admin/settings/page.tsx",
+          "start_line": 1,
+          "end_line": 5,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.18713
+        },
+        {
+          "file_path": "components/dashboard/Sidebar.tsx",
+          "start_line": 1,
+          "end_line": 17,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.15817
+        }
+      ]
+    },
+    {
+      "question": "Explain the difference between the 'rec_user' and 'rec_registered_user' localStorage keys and how they interact during registration followed by login.",
+      "difficulty": "hard",
+      "sources": [
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 41,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.43111
+        },
+        {
+          "file_path": "app/register/page.tsx",
+          "start_line": 47,
+          "end_line": 79,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.34953
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 20,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.27747
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 12,
+          "end_line": 18,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.06371
+        },
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 76,
+          "end_line": 95,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.04603
+        },
+        {
+          "file_path": "app/register/page.tsx",
+          "start_line": 1,
+          "end_line": 49,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.04468
+        },
+        {
+          "file_path": "components/layout/Navbar.tsx",
+          "start_line": 1,
+          "end_line": 13,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.04337
+        },
+        {
+          "file_path": "components/layout/LanguageSelector.tsx",
+          "start_line": 97,
+          "end_line": 121,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.03847
+        }
+      ]
+    },
+    {
+      "question": "Why does the app use localStorage and mock data instead of a real backend? Quote the code that reveals this design decision and explain the tradeoffs visible in the code.",
+      "difficulty": "hard",
+      "sources": [
+        {
+          "file_path": "app/register/page.tsx",
+          "start_line": 47,
+          "end_line": 79,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.27513
+        },
+        {
+          "file_path": "components/animations/SplitText.tsx",
+          "start_line": 1,
+          "end_line": 4,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.20307
+        },
+        {
+          "file_path": "app/courses/[id]/page.tsx",
+          "start_line": 1,
+          "end_line": 28,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.18713
+        },
+        {
+          "file_path": "app/login/page.tsx",
+          "start_line": 41,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.16668
+        },
+        {
+          "file_path": "components/animations/Typewriter.tsx",
+          "start_line": 1,
+          "end_line": 4,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.15406
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 20,
+          "end_line": 65,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.11596
+        },
+        {
+          "file_path": "components/auth/AuthContext.tsx",
+          "start_line": 1,
+          "end_line": 10,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.11437
+        },
+        {
+          "file_path": "components/layout/LanguageSelector.tsx",
+          "start_line": 97,
+          "end_line": 121,
+          "commit_sha": "4d22a752f8e30de006cca7c4751f4de7ccf6a850",
+          "score": 0.10375
+        }
+      ]
+    }
+  ]
+}
