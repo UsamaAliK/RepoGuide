@@ -1,7 +1,7 @@
 import asyncio
 from .reranking import rerank
 import json
-from .config import EMBEDDING_DIMENSIONS
+from .config import settings
 import urllib.request
 from .llm import generate_answer
 from .github import download_repo_zip,parse_github_url,get_repo_metadata
@@ -38,7 +38,7 @@ async def index_repo(url:str)->dict:
         raise ValueError("Repositry produced no chunks")
     texts=[c["text"] for c in chunks]
     vectors=await embed_text(texts)
-    if not vectors or len(vectors) != len(chunks) or not all(len(v) == EMBEDDING_DIMENSIONS for v in vectors):
+    if not vectors or len(vectors) != len(chunks) or not all(len(v) == settings.EMBEDDING_DIMENSIONS for v in vectors):
         raise ValueError(f"Embedding count/dimension mismatch: {len(chunks)} chunks vs {len(vectors)} vectors")
     await asyncio.to_thread(add_chunks, chunks, vectors)
 
