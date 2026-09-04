@@ -11,3 +11,8 @@ numpy==1.26.4
 torch==2.2.2
 transformers==4.44.2
 sentence-transformers==3.0.1
+alembic==1.19.1
+asyncpg==0.31.0
+greenlet==3.5.5
+sqlalchemy==2.0.52
+psycopg[binary]==3.3.5

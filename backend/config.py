@@ -7,6 +7,7 @@ load_dotenv()
 class Settings():
 
   GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+  DATABASE_URL = os.getenv("DATABASE_URL")
 
   EMBEDDING_MODEL = "all-MiniLM-L6-v2"
   EMBEDDING_DIMENSIONS=384
