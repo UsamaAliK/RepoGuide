@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -66,6 +66,7 @@ class Repository(Base):
     github_url: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
+        unique=True,
     )
 
     owner: Mapped[str] = mapped_column(
@@ -195,4 +196,59 @@ class Message(Base):
 
     conversation: Mapped["Conversation"] = relationship(
         back_populates="messages",
+    )
+
+    sources: Mapped[list["MessageSource"]] = relationship(
+        back_populates="message",
+        cascade="all, delete-orphan",
+    )
+
+
+class MessageSource(Base):
+    __tablename__ = "message_sources"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
+
+    message_id: Mapped[int] = mapped_column(
+        ForeignKey("messages.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    file_path: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    start_line: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    end_line: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    commit_sha: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+    )
+
+    score: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+
+    message: Mapped["Message"] = relationship(
+        back_populates="sources",
     )
