@@ -76,3 +76,15 @@ class ChatResponse(BaseModel):
     answer:str
     conversation_id:int
     sources:list[Source]
+class RegisterRequest(BaseModel):
+    """POST /api/register — body: {"username": "...", "password": "..."}"""
+    username:str
+    password:str
+class LoginRequest(BaseModel):
+    """POST /api/login — body: {"username": "...", "password": "..."}"""
+    username:str
+    password:str
+class TokenResponse(BaseModel):
+    """POST /api/login — response: {"access_token": "...", "token_type": "bearer"}"""
+    access_token:str
+    token_type:str="bearer"

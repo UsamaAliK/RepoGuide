@@ -4,10 +4,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import Annotated
 from fastapi.middleware.cors import CORSMiddleware
-from .schemas import RepoRequest, RepoResponse,AskRequest,AskResponse,ConversationInfo,MessageInfo,RepoInfo,ChatRequest,ChatResponse
+from .schemas import (RepoRequest, RepoResponse,AskRequest,AskResponse,
+                      ConversationInfo,MessageInfo,RepoInfo,ChatRequest,
+                      ChatResponse,RegisterRequest,LoginRequest,TokenResponse)
 from .database import get_db
 from .rag import index_repo, ask
 from .models import User, Repository, Conversation, Message, MessageSource
+from .auth import passsword_hash, verify_password, create_access_token
 
 # --- FastAPI routes ---
 
@@ -203,4 +206,25 @@ async def chat(request: ChatRequest, db: Annotated[AsyncSession,Depends(get_db)]
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post("/api/register", response_model=TokenResponse)
+async def register(request:RegisterRequest,db:Annotated[AsyncSession,Depends(get_db)]):
+    """Register a new user and return a JWT token"""
+    try:
+        existing_user=await db.execute(select(User).where(User.username==request.username))
+        existing_user=existing_user.scalar_one_or_none()
+        if existing_user:
+            raise HTTPException(status_code=400,detail="Username already exists")
+        hashed_password=passsword_hash(request.password)
+        new_user=User(username=request.username,passsword_hash=hashed_password)
+        db.add(new_user)
+        db.flush()
+        token=create_access_token(new_user.id)
+        await db.commit()
+        return TokenResponse(access_token=token,token_type="bearer")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
     
