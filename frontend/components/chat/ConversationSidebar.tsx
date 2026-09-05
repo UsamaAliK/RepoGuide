@@ -91,7 +91,6 @@ export function ConversationSidebar() {
           </ul>
         )}
       </div>
-      <p className="sidebar-note">Grounded answers for the code you ship.</p>
     </aside>
   );
 }
