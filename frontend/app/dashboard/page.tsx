@@ -1,9 +1,8 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { RepositoryInput } from "@/components/repository/RepositoryInput";
 
 export default function DashboardPage() {
   return (
-    <DashboardLayout>
+    <main className="app-main">
       <section className="dashboard-intro">
         <p className="eyebrow">Workspace</p>
         <h1>Your repositories</h1>
@@ -14,6 +13,6 @@ export default function DashboardPage() {
         <p>RepoGuide indexes the default branch and answers only from retrieved repository context.</p>
         <RepositoryInput />
       </section>
-    </DashboardLayout>
+    </main>
   );
 }

@@ -1,9 +1,9 @@
 import { apiRequest } from "@/lib/api/client";
-import type { AskResponse } from "@/types/api";
+import type { ChatResponse } from "@/types/api";
 
-export function askRepository(url: string, question: string) {
-  return apiRequest<AskResponse>("/ask", {
+export function askRepository(url: string, question: string, conversationId: number) {
+  return apiRequest<ChatResponse>("/api/chat", {
     method: "POST",
-    body: JSON.stringify({ url, question })
+    body: JSON.stringify({ url, question, conversation_id: conversationId })
   });
 }

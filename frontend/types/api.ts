@@ -17,3 +17,36 @@ export type AskResponse = {
   answer: string;
   sources: Source[];
 };
+
+export type ChatResponse = {
+  answer: string;
+  conversation_id: number;
+  sources: Source[];
+};
+
+export type RepositoryInfo = {
+  id: number;
+  github_url: string;
+  owner: string;
+  repo_name: string;
+  branch: string;
+  commit_sha: string;
+  status: string;
+  created_at: string;
+};
+
+export type Conversation = {
+  id: number;
+  repository_id: number;
+  title: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Message = {
+  id: number;
+  role: string;
+  content: string;
+  created_at: string;
+  sources: Source[];
+};
