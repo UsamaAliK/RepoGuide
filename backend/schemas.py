@@ -31,10 +31,6 @@ class RepoInfo(BaseModel):
     commit_sha:str
     status:str
     created_at:datetime
-class AskRequest(BaseModel):
-    """POST /ask — body: {"url": "...", "question": "..."}"""
-    url:str
-    question:str
 
 class Source(BaseModel):
     """A source link back to the exact file + line range in the repo"""
@@ -44,11 +40,6 @@ class Source(BaseModel):
     end_line: int
     commit_sha: str
     score: float
-
-class AskResponse(BaseModel):
-    """POST /ask — response: answer text + source links"""
-    answer:str
-    sources:list[Source]
 
 class MessageInfo(BaseModel):
     """A message in a conversation"""
