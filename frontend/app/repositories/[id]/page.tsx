@@ -1,3 +1,4 @@
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { RepositoryWorkspace } from "@/components/repository/RepositoryWorkspace";
 
 type RepositoryPageProps = {
@@ -8,5 +9,9 @@ type RepositoryPageProps = {
 export default async function RepositoryPage({ params, searchParams }: RepositoryPageProps) {
   const [{ id }, { url, conversationId }] = await Promise.all([params, searchParams]);
   const initialConversationId = conversationId ? Number(conversationId) : undefined;
-  return <RepositoryWorkspace repositoryName={decodeURIComponent(id)} repositoryUrl={url ?? ""} initialConversationId={initialConversationId} />;
+  return (
+    <AuthGuard>
+      <RepositoryWorkspace repositoryName={decodeURIComponent(id)} repositoryUrl={url ?? ""} initialConversationId={initialConversationId} />
+    </AuthGuard>
+  );
 }
