@@ -62,6 +62,19 @@ h2 { font-size: 1.125rem; letter-spacing: -0.02em; }
 .conversation-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .conversation-repo { color: var(--muted); font-size: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-note { color: var(--muted); font-size: .8rem; margin-top: auto; }
+.sidebar-user { align-items: center; border-top: 1px solid var(--border); color: var(--muted); display: flex; font-size: .875rem; justify-content: space-between; margin-top: auto; padding-top: 1rem; }
+.landing-header-actions { align-items: center; display: flex; gap: 1rem; }
+.landing-header-actions .button { padding: .45rem .7rem; }
+.auth-username { font-weight: 600; }
+.button-as-link { background: none; color: var(--muted); font-weight: 600; padding: 0; }
+.button-as-link:hover { color: var(--foreground); }
+.auth-page { display: grid; min-height: 100vh; padding: 2rem; place-items: center; }
+.auth-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); max-width: 400px; padding: 2rem; width: 100%; }
+.auth-panel h1 { font-size: 1.75rem; margin-bottom: 1.25rem; }
+.auth-form { display: grid; gap: .75rem; }
+.auth-form label { font-weight: 600; }
+.auth-form .button { justify-content: center; }
+.auth-switch { color: var(--muted); font-size: .875rem; margin-top: 1rem; }
 .app-main { padding: clamp(1.5rem, 5vw, 4rem); }
 .dashboard-intro { border-bottom: 1px solid var(--border); max-width: 760px; padding-bottom: 2rem; }
 .dashboard-intro p:not(.eyebrow) { color: var(--muted); }
