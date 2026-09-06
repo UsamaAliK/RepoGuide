@@ -7,7 +7,7 @@ from .models import User
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from database import get_db
+from .database import get_db
 from typing import Annotated
 from fastapi import FastAPI, HTTPException,Depends,status
 from .models import User, Repository, Conversation, Message, MessageSource
@@ -15,8 +15,8 @@ from .models import User, Repository, Conversation, Message, MessageSource
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
-def passsword_hash(password:str)->str:
-    """Hash a passsword using bcrypt"""
+def password_hash(password:str)->str:
+    """Hash a password using bcrypt"""
     salt=bcrypt.gensalt()
     hashed=bcrypt.hashpw(password.encode(),salt)
     return hashed.decode()
