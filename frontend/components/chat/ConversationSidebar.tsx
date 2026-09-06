@@ -6,9 +6,11 @@ import { useEffect, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { getAllConversations } from "@/lib/api/conversations";
 import { getRepositories } from "@/lib/api/repositories";
+import { useAuth } from "@/lib/auth/AuthContext";
 import type { Conversation, RepositoryInfo } from "@/types/api";
 
 export function ConversationSidebar() {
+  const { isAuthenticated, username, logout } = useAuth();
   const pathname = usePathname();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [repositories, setRepositories] = useState<RepositoryInfo[]>([]);
@@ -91,6 +93,12 @@ export function ConversationSidebar() {
           </ul>
         )}
       </div>
+      {isAuthenticated && (
+        <div className="sidebar-user">
+          <span>{username}</span>
+          <button className="button-as-link" type="button" onClick={logout}>Log out</button>
+        </div>
+      )}
     </aside>
   );
 }

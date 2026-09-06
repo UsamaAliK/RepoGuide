@@ -50,3 +50,18 @@ export type Message = {
   created_at: string;
   sources: Source[];
 };
+
+export type RegisterRequest = {
+  username: string;
+  password: string;
+};
+
+export type LoginRequest = {
+  username: string;
+  password: string;
+};
+
+export type TokenResponse = {
+  access_token: string;
+  token_type: string;
+};
