@@ -76,6 +76,10 @@ class LoginRequest(BaseModel):
     username:str
     password:str
 class TokenResponse(BaseModel):
-    """POST /api/login — response: {"access_token": "...", "token_type": "bearer"}"""
+    """POST /api/login — response: {"access_token": "...", "refresh_token": "...", "token_type": "bearer"}"""
     access_token:str
+    refresh_token:str=""
     token_type:str="bearer"
+class RefreshRequest(BaseModel):
+    """POST /api/refresh — body: {"refresh_token": "..."}"""
+    refresh_token:str
