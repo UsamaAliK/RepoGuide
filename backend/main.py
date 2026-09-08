@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, HTTPException,Depends,status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,8 +9,9 @@ from .schemas import (RepoRequest, RepoResponse,
                       ConversationInfo,MessageInfo,RepoInfo,ChatRequest,
                       ChatResponse,RegisterRequest,LoginRequest,TokenResponse)
 from .database import get_db
-from .rag import index_repo, ask
-from .models import User, Repository, Conversation, Message, MessageSource
+from .rag import index_repo, ask, latest_commit_sha
+from .github import parse_github_url
+from .models import User, Repository, Conversation, Message, MessageSource, UserRepository
 from .auth import password_hash, verify_password, create_access_token,current_user
 
 # --- FastAPI routes ---
@@ -24,6 +26,15 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+async def get_user_repo_access(db: AsyncSession, user_id: int, repository_id: int):
+    result = await db.execute(
+        select(UserRepository).where(
+            UserRepository.user_id == user_id,
+            UserRepository.repository_id == repository_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
 
 @app.get("/")
 async def root():
@@ -34,25 +45,58 @@ async def root():
 @app.post("/index", response_model=RepoResponse)
 async def index(request: RepoRequest,db: Annotated[AsyncSession, Depends(get_db)],user:Annotated[User,Depends(current_user)]):
     try:
-        result = await index_repo(request.url)
-        existing = (await db.execute(
+        info = parse_github_url(request.url)
+        owner, repo_name = info["owner"], info["repo"]
+
+        existing_repo = (await db.execute(
             select(Repository).where(
-                Repository.owner == result["owner"],
-                Repository.repo_name == result["repo"],
-                Repository.user_id == user.id,
+                Repository.owner == owner,
+                Repository.repo_name == repo_name,
             )
         )).scalar_one_or_none()
-        if existing is None:
-            db.add(Repository(
-                user_id=user.id,
-                github_url=request.url,
-                owner=result["owner"],
-                repo_name=result["repo"],
-                branch=result["branch"],
-                commit_sha=result["commit_sha"],
-                status="indexed",
-            ))
+
+        if existing_repo is not None:
+            access = await get_user_repo_access(db, user.id, existing_repo.id)
+            if access is not None:
+                return RepoResponse(
+                    url=request.url,
+                    status="success",
+                    message="Repository already indexed and accessible",
+                    file_count=0,
+                )
+
+            current_sha = await asyncio.to_thread(
+                latest_commit_sha, owner, repo_name, existing_repo.branch
+            )
+            file_count = 0
+            if current_sha != existing_repo.commit_sha:
+                result = await index_repo(request.url)
+                existing_repo.commit_sha = result["commit_sha"]
+                existing_repo.status = "indexed"
+                file_count = result["file_count"]
+
+            db.add(UserRepository(user_id=user.id, repository_id=existing_repo.id))
             await db.commit()
+            return RepoResponse(
+                url=request.url,
+                status="success",
+                message="Repository indexed successfully" if file_count else "Repository already indexed and accessible",
+                file_count=file_count,
+            )
+
+        result = await index_repo(request.url)
+        new_repo = Repository(
+            github_url=request.url,
+            owner=result["owner"],
+            repo_name=result["repo"],
+            branch=result["branch"],
+            commit_sha=result["commit_sha"],
+            status="indexed",
+        )
+        db.add(new_repo)
+        await db.flush()
+        db.add(UserRepository(user_id=user.id, repository_id=new_repo.id))
+        await db.commit()
 
         return RepoResponse(
             url=request.url,
@@ -68,7 +112,11 @@ async def index(request: RepoRequest,db: Annotated[AsyncSession, Depends(get_db)
 @app.get("/api/repositories", response_model=list[RepoInfo])
 async def get_repositories(db: Annotated[AsyncSession, Depends(get_db)],user:Annotated[User,Depends(current_user)]):
     try:
-        result = await db.execute(select(Repository).where(Repository.user_id == user.id))
+        result = await db.execute(
+            select(Repository)
+            .join(UserRepository, UserRepository.repository_id == Repository.id)
+            .where(UserRepository.user_id == user.id)
+        )
         repositories = result.scalars().all()
         return repositories
     except HTTPException as e:
@@ -83,7 +131,8 @@ async def get_repository(repo_id: int, db: Annotated[AsyncSession, Depends(get_d
         repository = result.scalar_one_or_none()
         if repository is None:
             raise HTTPException(status_code=404, detail="Repository not found")
-        if repository.user_id != user.id:
+        access = await get_user_repo_access(db, user.id, repo_id)
+        if access is None:
             raise HTTPException(status_code=403, detail="Not authorized to access this repository")
         return repository
     except HTTPException as e:
@@ -109,7 +158,8 @@ async def get_conversations(repo_id: int, db: Annotated[AsyncSession, Depends(ge
         repo = repo.scalar_one_or_none()
         if repo is None:
             raise HTTPException(status_code=404, detail="Repository not found")
-        if repo.user_id != user.id:
+        access = await get_user_repo_access(db, user.id, repo_id)
+        if access is None:
             raise HTTPException(status_code=403, detail="Not authorized to access this repository")
         result = await db.execute(select(Conversation).where(
             Conversation.repository_id == repo_id,
@@ -144,10 +194,13 @@ async def get_messages(conversation_id: int, db: Annotated[AsyncSession, Depends
 async def chat(request: ChatRequest, db: Annotated[AsyncSession,Depends(get_db)],user:Annotated[User,Depends(current_user)]):
 
 
-    repo=await db.execute(select(Repository).where(Repository.github_url==request.url,Repository.user_id==user.id))
+    repo=await db.execute(select(Repository).where(Repository.github_url==request.url))
     repo=repo.scalar_one_or_none()
     if not repo:
         raise HTTPException(status_code=404, detail="Repository not found")
+    access = await get_user_repo_access(db, user.id, repo.id)
+    if access is None:
+        raise HTTPException(status_code=403, detail="Not authorized to access this repository")
     conversation=None
     if request.conversation_id!=0:
         conversation=await db.execute(select(Conversation).where(
