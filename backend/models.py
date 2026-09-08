@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -38,7 +38,7 @@ class User(Base):
         nullable=False,
     )
 
-    repositories: Mapped[list["Repository"]] = relationship(
+    user_repositories: Mapped[list["UserRepository"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -51,22 +51,16 @@ class User(Base):
 
 class Repository(Base):
     __tablename__ = "repositories"
+    __table_args__ = (UniqueConstraint("github_url"),)
 
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
     )
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-
     github_url: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        unique=True,
     )
 
     owner: Mapped[str] = mapped_column(
@@ -101,9 +95,9 @@ class Repository(Base):
         default=utc_now,
         nullable=False,
     )
-
-    user: Mapped["User"] = relationship(
-        back_populates="repositories",
+    user_repositories: Mapped[list["UserRepository"]] = relationship(
+        back_populates="repository",
+        cascade="all, delete-orphan",
     )
 
     conversations: Mapped[list["Conversation"]] = relationship(
@@ -252,3 +246,34 @@ class MessageSource(Base):
     message: Mapped["Message"] = relationship(
         back_populates="sources",
     )
+
+
+class UserRepository(Base):
+    __tablename__ = "user_repositories"
+    __table_args__=(UniqueConstraint("user_id", "repository_id"),)
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    repository_id: Mapped[int] = mapped_column(
+        ForeignKey("repositories.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship(back_populates="user_repositories")
+    repository: Mapped["Repository"] = relationship(back_populates="user_repositories")
