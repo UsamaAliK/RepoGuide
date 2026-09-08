@@ -77,6 +77,7 @@ async def download_repo_zip(owner: str, repo: str, branch: str) -> dict:
     return {
         "filtered files":filtered,
         "root": root,
-        "files": file_paths
+        "files": file_paths,
+        "temp_dir": temp_dir
     }
 
