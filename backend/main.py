@@ -21,7 +21,7 @@ app.add_middleware(
     allow_origin_regex=r"^http://(localhost|127\.0\.0\.1):\d+$",
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
@@ -212,7 +212,7 @@ async def register(request:RegisterRequest,db:Annotated[AsyncSession,Depends(get
         hashed_password=password_hash(request.password)
         new_user=User(username=request.username,password_hash=hashed_password)
         db.add(new_user)
-        db.flush()
+        await db.flush()
         token=create_access_token(new_user.id)
         await db.commit()
         return TokenResponse(access_token=token,token_type="bearer")

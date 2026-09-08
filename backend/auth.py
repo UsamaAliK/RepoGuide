@@ -40,7 +40,7 @@ async def current_user(token:Annotated[str,Depends(oauth2_scheme)],db:Annotated[
     try:
         payload=jwt.decode(token,settings.JWT_SECRET,algorithms=[settings.JWT_ALGORITHM])
         user_id=int(payload["sub"])
-    except (jwt.ExpiredSignatureError,jwt.InvalidTokenError):
+    except (jwt.ExpiredSignatureError,jwt.InvalidTokenError,ValueError,KeyError,TypeError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid or expired token",
                             headers={"WWW-Authenticate":"Bearer"})
