@@ -76,18 +76,29 @@ LEARNING STYLE:
   """
 
 
-def build_answer_prompt(question: str, context: str) -> str:
-    """Build the user-facing prompt: repo context + question + instructions."""
+def build_answer_prompt(question: str, context: str, history: list[dict] | None = None) -> str:
+    """Build the user-facing prompt: repo context + optional conversation history + question."""
+    history_block = ""
+    if history:
+        lines = []
+        for msg in history:
+            if msg.get("role") == "summary":
+                lines.append(f"[Earlier conversation summary]: {msg['content']}")
+            else:
+                role = "User" if msg["role"] == "user" else "Assistant"
+                lines.append(f"{role}: {msg['content']}")
+        history_block = "Previous conversation:\n\n" + "\n\n".join(lines) + "\n\n"
+
     return f"""
 Repository context:
 
 {context}
 
-User question:
+{history_block}User question:
 
 {question}
 
-Answer the user's question using the repository context.
+Answer the user's question using the repository context and the previous conversation.
 
 Remember:
 - Do not provide sources, citations, file names, line numbers, chunk numbers, or URLs.

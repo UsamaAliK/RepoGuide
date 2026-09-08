@@ -3,6 +3,7 @@ from .reranking import rerank
 import json
 from .config import settings
 import urllib.request
+import re
 from .llm import generate_answer
 from .github import download_repo_zip,parse_github_url,get_repo_metadata
 from .chunking import chunk_files
@@ -10,6 +11,36 @@ from .embeddings import embed_text,embed_batch
 from .vector_storage import add_chunks,query_chunks,get_file_chunks
 
 TOP_K=15
+
+VAGUE_PATTERNS = re.compile(
+    r"\b(it|this|that|these|those|there|they|them)\b"
+    r"|\b(what about|how about|explain it|why is that|and then|also)\b",
+    re.IGNORECASE,
+)
+
+def is_standalone(question: str) -> bool:
+    """True if the question carries enough context to be searched on its own."""
+    q = question.strip()
+    if len(q) < 5:
+        return False
+    if not any(c.isalpha() for c in q):
+        return False
+    return not bool(VAGUE_PATTERNS.search(q))
+
+def build_search_query(question: str, history: list[dict] | None) -> str:
+    """Search-query builder: combine with the last user question when needed.
+
+    Only used for embedding/search. The LLM still sees the original question.
+    """
+    if is_standalone(question):
+        return question
+    last_user_q = next(
+        (m["content"] for m in reversed(history or []) if m.get("role") == "user"),
+        None,
+    )
+    if last_user_q:
+        return f"{last_user_q} {question}"
+    return question
 
 # --- helpers ---
 
@@ -103,13 +134,15 @@ def find_neighbors(initial_metas:list[dict],owner:str,repo:str):
 
 # --- query pipeline: embed question → search chroma → neighbors → LLM → answer + sources ---
 
-async def ask(question: str, url: str, top_k: int = TOP_K) -> dict:
+async def ask(question: str, url: str, top_k: int = TOP_K, history: list[dict] | None = None) -> dict:
     info = parse_github_url(url)
     owner, repo = info["owner"], info["repo"]
 
-    # embed the user's question
+    # embed a search query built from the original question (the LLM still
+    # sees the original question — the combined query is only for search)
+    search_query = build_search_query(question, history)
     qvec = await asyncio.to_thread(
-        lambda: embed_batch([question])[0]
+        lambda: embed_batch([search_query])[0]
     )
 
     # semantic search — top-k most similar chunks
@@ -152,7 +185,7 @@ async def ask(question: str, url: str, top_k: int = TOP_K) -> dict:
     # build context and get LLM answer
     context = "\n\n".join(docs)
 
-    answer = await asyncio.to_thread(generate_answer, question, context)
+    answer = await asyncio.to_thread(generate_answer, question, context,history)
 
     # build source links from chunk metadata
     sources = [
