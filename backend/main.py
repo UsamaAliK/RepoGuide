@@ -7,13 +7,15 @@ from typing import Annotated
 from fastapi.middleware.cors import CORSMiddleware
 from .schemas import (RepoRequest, RepoResponse,
                       ConversationInfo,MessageInfo,RepoInfo,ChatRequest,
-                      ChatResponse,RegisterRequest,LoginRequest,TokenResponse)
+                      ChatResponse,RegisterRequest,LoginRequest,TokenResponse,
+                      RefreshRequest)
 from .database import get_db
 from .rag import index_repo, ask, latest_commit_sha
 from .github import parse_github_url
 from .llm import summarize_conversation
-from .models import User, Repository, Conversation, Message, MessageSource, UserRepository
-from .auth import password_hash, verify_password, create_access_token,current_user
+from .models import User, Repository, Conversation, Message, MessageSource, UserRepository, RefreshToken
+from .auth import (password_hash, verify_password, create_access_token,
+                   create_refresh_token, get_valid_refresh_token, hash_token, current_user)
 
 # --- FastAPI routes ---
 
@@ -312,8 +314,9 @@ async def register(request:RegisterRequest,db:Annotated[AsyncSession,Depends(get
         db.add(new_user)
         await db.flush()
         token=create_access_token(new_user.id)
+        refresh_token=await create_refresh_token(db,new_user.id)
         await db.commit()
-        return TokenResponse(access_token=token,token_type="bearer")
+        return TokenResponse(access_token=token,refresh_token=refresh_token,token_type="bearer")
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -329,7 +332,41 @@ async def login(request:LoginRequest,db:Annotated[AsyncSession,Depends(get_db)])
         if not user or not password_valid:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid username or password")
         token=create_access_token(user.id)
-        return TokenResponse(access_token=token,token_type="bearer")
+        refresh_token=await create_refresh_token(db,user.id)
+        await db.commit()
+        return TokenResponse(access_token=token,refresh_token=refresh_token,token_type="bearer")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
+
+@app.post("/api/refresh",response_model=TokenResponse)
+async def refresh(request:RefreshRequest,db:Annotated[AsyncSession,Depends(get_db)]):
+    """Exchange a valid refresh token for a new access token (rotating the refresh token)"""
+    try:
+        row=await get_valid_refresh_token(db,request.refresh_token)
+        if row is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid or expired refresh token")
+        # rotate: revoke the old refresh token, issue a new pair
+        row.revoked=True
+        token=create_access_token(row.user_id)
+        refresh_token=await create_refresh_token(db,row.user_id)
+        await db.commit()
+        return TokenResponse(access_token=token,refresh_token=refresh_token,token_type="bearer")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
+
+@app.post("/api/logout",response_model=TokenResponse)
+async def logout(request:RefreshRequest,db:Annotated[AsyncSession,Depends(get_db)]):
+    """Revoke a refresh token so it can no longer be used"""
+    try:
+        row=await get_valid_refresh_token(db,request.refresh_token)
+        if row is not None:
+            row.revoked=True
+            await db.commit()
+        return TokenResponse(access_token="",refresh_token="",token_type="bearer")
     except HTTPException as e:
         raise e
     except Exception as e:

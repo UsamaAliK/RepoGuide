@@ -1,4 +1,6 @@
 import asyncio
+import os
+import shutil
 from .reranking import rerank
 import json
 from .config import settings
@@ -62,11 +64,16 @@ async def index_repo(url:str)->dict:
     meta=await get_repo_metadata(owner,repo)
     branch=meta["default_branch"]
     downloaded=await download_repo_zip(owner,repo,branch)
+    temp_dir=downloaded["temp_dir"]
     files=downloaded["filtered files"]
     if not files:
+        shutil.rmtree(temp_dir, ignore_errors=True)
         raise ValueError("No filterable file found in this repo")
-    commit_sha= await asyncio.to_thread(latest_commit_sha,owner,repo,branch)
-    chunks= await asyncio.to_thread(chunk_files,files,commit_sha,owner,repo)
+    try:
+        commit_sha= await asyncio.to_thread(latest_commit_sha,owner,repo,branch)
+        chunks= await asyncio.to_thread(chunk_files,files,commit_sha,owner,repo)
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
     if not chunks:
         raise ValueError("Repositry produced no chunks")
     texts=[c["text"] for c in chunks]
