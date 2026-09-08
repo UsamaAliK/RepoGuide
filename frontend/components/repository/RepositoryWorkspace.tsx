@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ChatWindow, type ChatMessage } from "@/components/chat/ChatWindow";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { Logo } from "@/components/layout/Logo";
 import { ApiError } from "@/lib/api/client";
 import { askRepository } from "@/lib/api/chat";
 import { getMessages } from "@/lib/api/conversations";
@@ -56,8 +57,12 @@ export function RepositoryWorkspace({ repositoryName, repositoryUrl, initialConv
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
-        <Link className="brand" href="/dashboard">RepoGuide</Link>
-        <span className="repository-name">{repositoryName}</span>
+        <Link className="brand" href="/dashboard"><Logo /></Link>
+        <span className="repository-name">
+          {repositoryName.split("/")[0]}
+          <span className="repository-name-separator">/</span>
+          {repositoryName.split("/").slice(1).join("/")}
+        </span>
         <Link className="text-link" href="/dashboard">Change repository</Link>
       </header>
       <main className="workspace-main">

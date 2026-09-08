@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { Logo } from "@/components/layout/Logo";
 
 export function LandingHeader() {
   const { isAuthenticated, isLoading, username, logout } = useAuth();
 
   return (
     <header className="landing-header">
-      <Link className="brand" href="/">RepoGuide</Link>
+      <Link className="brand" href="/"><Logo />RepoGuide</Link>
       {isLoading ? null : isAuthenticated ? (
         <div className="landing-header-actions">
           <Link className="text-link" href="/dashboard">Open workspace</Link>

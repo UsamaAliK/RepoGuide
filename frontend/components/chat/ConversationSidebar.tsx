@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api/client";
 import { getAllConversations } from "@/lib/api/conversations";
 import { getRepositories } from "@/lib/api/repositories";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { Logo } from "@/components/layout/Logo";
 import type { Conversation, RepositoryInfo } from "@/types/api";
 
 export function ConversationSidebar() {
@@ -59,7 +60,7 @@ export function ConversationSidebar() {
 
   return (
     <aside className="sidebar" aria-label="Conversations">
-      <Link className="brand" href="/dashboard">RepoGuide</Link>
+      <Link className="brand" href="/dashboard"><Logo /></Link>
       <nav aria-label="Primary navigation">
         <Link className="nav-link nav-link-active" href="/dashboard">Repositories</Link>
       </nav>
