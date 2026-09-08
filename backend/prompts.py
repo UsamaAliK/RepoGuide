@@ -101,6 +101,7 @@ Repository context:
 Answer the user's question using the repository context and the previous conversation.
 
 Remember:
+- The repository context is organized into sections labeled by file path and line range. Use the file labels to identify where code lives and trace relationships between files.
 - Do not provide sources, citations, file names, line numbers, chunk numbers, or URLs.
 - Do not invent information that is not supported by the repository context.
 - If this is a setup/run question, provide the necessary commands and steps.

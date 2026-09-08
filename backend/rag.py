@@ -195,7 +195,11 @@ async def ask(question: str, url: str, top_k: int = TOP_K, history: list[dict] |
         return {"answer": "No matching code found in this repository.", "sources": []}
 
     # build context and get LLM answer
-    context = "\n\n".join(docs)
+    context_parts = []
+    for d, m in zip(docs, metas):
+        file_label = f"### {m['file_path']} (lines {m['start_line']}-{m['end_line']})"
+        context_parts.append(f"{file_label}\n{d}")
+    context = "\n\n".join(context_parts)
 
     answer = await asyncio.to_thread(generate_answer, question, context,history)
 
