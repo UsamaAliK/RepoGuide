@@ -11,6 +11,7 @@ from .schemas import (RepoRequest, RepoResponse,
 from .database import get_db
 from .rag import index_repo, ask, latest_commit_sha
 from .github import parse_github_url
+from .llm import summarize_conversation
 from .models import User, Repository, Conversation, Message, MessageSource, UserRepository
 from .auth import password_hash, verify_password, create_access_token,current_user
 
@@ -181,7 +182,10 @@ async def get_messages(conversation_id: int, db: Annotated[AsyncSession, Depends
             raise HTTPException(status_code=404, detail="Conversation not found")
         if conversation.user_id != user.id:
             raise HTTPException(status_code=403, detail="Not authorized to access this conversation")
-        result = await db.execute(select(Message).options(selectinload(Message.sources)).where(Message.conversation_id == conversation_id))
+        result = await db.execute(select(Message).options(selectinload(Message.sources)).where(
+            Message.conversation_id == conversation_id,
+            Message.role != "summary",
+        ).order_by(Message.created_at))
         messages = result.scalars().all()
         return messages
     except HTTPException as e:
@@ -214,11 +218,52 @@ async def chat(request: ChatRequest, db: Annotated[AsyncSession,Depends(get_db)]
             raise HTTPException(status_code=404, detail="Conversation does not belong to this repository")
     # ask question
     try:
-        result=await ask(request.question,request.url)
+        RETAIN = 8
+        history = []
+        if conversation is not None:
+            all_msgs = (await db.execute(
+                select(Message)
+                .where(Message.conversation_id == conversation.id)
+                .order_by(Message.created_at)
+            )).scalars().all()
+            summary_row = None
+            raw_msgs = []
+            for m in all_msgs:
+                if m.role == "summary":
+                    summary_row = m
+                else:
+                    raw_msgs.append(m)
+
+            overflow = len(raw_msgs) + 2 - RETAIN
+            if overflow > 0:
+                cohort = raw_msgs[:overflow]
+                new_summary = await asyncio.to_thread(
+                    summarize_conversation,
+                    summary_row.content if summary_row else "",
+                    [{"role": m.role, "content": m.content} for m in cohort],
+                )
+                if summary_row:
+                    summary_row.content = new_summary
+                else:
+                    db.add(Message(
+                        conversation_id=conversation.id,
+                        role="summary",
+                        content=new_summary,
+                    ))
+                raw_msgs = raw_msgs[overflow:]
+
+            history = [{"role": "summary", "content": summary_row.content}] if summary_row else []
+            history += [
+                {"role": m.role, "content": m.content}
+                for m in raw_msgs[-RETAIN:]
+            ]
+
+        result=await ask(request.question,request.url,history=history)
         if conversation is None:
             conversation=Conversation(repository_id=repo.id,title=repo.repo_name,user_id=user.id)
             db.add(conversation)
             await db.flush()
+
         # store question and answer in messages
         question_message=Message(
             conversation_id=conversation.id,
