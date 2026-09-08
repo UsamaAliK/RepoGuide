@@ -12,6 +12,8 @@ from .vector_storage import add_chunks,query_chunks,get_file_chunks
 
 TOP_K=15
 
+MIN_SCORE=0.15
+
 VAGUE_PATTERNS = re.compile(
     r"\b(it|this|that|these|those|there|they|them)\b"
     r"|\b(what about|how about|explain it|why is that|and then|also)\b",
@@ -173,14 +175,24 @@ async def ask(question: str, url: str, top_k: int = TOP_K, history: list[dict] |
     metas = [m for _, m, _ in deduped]
     deduped_distances = [dist for _, _, dist in deduped]
 
-    # Score ALL candidates (neighbors included) with Jina, then keep the top 8.
-    # This gives neighbors a real relevance score instead of the placeholder 0.
+    # Score ALL candidates (neighbors included) with Jina, then keep only those
+    # above the relevance threshold (capped at 8) for the LLM context.
     reranked = await rerank(question, docs, len(docs))
     docs = [docs[i] for i, _ in reranked]
     metas = [metas[i] for i, _ in reranked]
     deduped_distances = [score for _, score in reranked]
-    # trim to top 8 most relevant chunks for the LLM context
-    docs, metas, deduped_distances = docs[:8], metas[:8], deduped_distances[:8]
+    # drop chunks below MIN_SCORE, then trim to top 8 most relevant
+    kept = [
+        (d, m, s)
+        for d, m, s in zip(docs, metas, deduped_distances)
+        if s >= MIN_SCORE
+    ]
+    docs = [x[0] for x in kept][:8]
+    metas = [x[1] for x in kept][:8]
+    deduped_distances = [x[2] for x in kept][:8]
+
+    if not docs:
+        return {"answer": "No matching code found in this repository.", "sources": []}
 
     # build context and get LLM answer
     context = "\n\n".join(docs)
