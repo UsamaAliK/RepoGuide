@@ -188,12 +188,19 @@ async def ask(question: str, url: str, top_k: int = TOP_K, history: list[dict] |
     docs = [docs[i] for i, _ in reranked]
     metas = [metas[i] for i, _ in reranked]
     deduped_distances = [score for _, score in reranked]
-    # drop chunks below MIN_SCORE, then trim to top 8 most relevant
-    kept = [
-        (d, m, s)
-        for d, m, s in zip(docs, metas, deduped_distances)
-        if s >= MIN_SCORE
-    ]
+    # drop chunks far below the top score (relative threshold), then trim to
+    # top 8 most relevant. Jina reranker scores vary by repo, so an absolute
+    # cutoff (e.g. 0.15) wrongly empties retrieval on small/README-heavy repos.
+    if deduped_distances:
+        top_score = max(deduped_distances)
+        relative_cutoff = top_score * 0.25
+        kept = [
+            (d, m, s)
+            for d, m, s in zip(docs, metas, deduped_distances)
+            if s >= relative_cutoff
+        ]
+    else:
+        kept = []
     docs = [x[0] for x in kept][:8]
     metas = [x[1] for x in kept][:8]
     deduped_distances = [x[2] for x in kept][:8]
