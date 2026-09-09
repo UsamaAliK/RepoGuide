@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getToken, getUsername, storeSession, clearSession } from "@/lib/auth/token";
-import { login as apiLogin, register as apiRegister } from "@/lib/api/auth";
+import { login as apiLogin, logout as apiLogout, register as apiRegister } from "@/lib/api/auth";
 
 type AuthContextValue = {
   token: string | null;
@@ -29,19 +29,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(name: string, password: string) {
     const response = await apiLogin(name, password);
-    storeSession(response.access_token, name);
+    storeSession(response.access_token, response.refresh_token, name);
     setToken(response.access_token);
     setUsername(name);
   }
 
   async function register(name: string, password: string) {
     const response = await apiRegister(name, password);
-    storeSession(response.access_token, name);
+    storeSession(response.access_token, response.refresh_token, name);
     setToken(response.access_token);
     setUsername(name);
   }
 
   function logout() {
+    apiLogout().catch(() => {});
     clearSession();
     setToken(null);
     setUsername(null);
