@@ -18,7 +18,7 @@ export function SourcePanel({ sources, repositoryUrl }: SourcePanelProps) {
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <svg className="source-caret" width="10" height="10" viewBox="0 0 16 16" aria-hidden="true">
+        <svg className="source-caret" width="10" height="10" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
           {open ? (
             <path d="M4.427 9.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.793 9H4.207a.25.25 0 00-.78.427z" fill="currentColor" />
           ) : (

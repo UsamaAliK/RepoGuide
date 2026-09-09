@@ -48,7 +48,7 @@ export function ChatInput({ disabled, onSubmit }: ChatInputProps) {
         disabled={disabled}
       />
       <button className="send-button" type="submit" disabled={disabled || !question.trim()} aria-label="Send question">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
           <path d="M12 19V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M5 12l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
