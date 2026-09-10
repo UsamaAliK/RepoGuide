@@ -44,11 +44,17 @@ The user asks a question about the repository. Consecutive questions form a **co
 
 ### 4. Retrieve & Expand
 
-The (possibly rewritten) question is embedded and relevant code chunks are retrieved using semantic similarity search. Each retrieved chunk is expanded with its **before and after neighbors** in the same file (by line number) so the model has surrounding context.
+The (possibly rewritten) question runs through **hybrid retrieval** — three independent searches whose results are fused by **reciprocal rank fusion (RRF)**:
+
+* **Semantic (vector)** — embedded and matched against pgvector (top-10)
+* **Keyword (full-text)** — Postgres FTS over chunk content (`tsvector` + `ts_rank_cd`, top-10)
+* **Filename** — deterministic `file_path` matching when the question names a file (so "how does `render.yaml` work" always finds the file)
+
+Each candidate chunk is then expanded with its **before and after neighbors** in the same file (by line number) so the model has surrounding context, deduplicated, and capped at 20 candidates.
 
 ### 5. Rerank
 
-All candidates (retrieved + neighbors) are deduplicated by location and rescored against the question by the [Jina AI reranker](https://jina.ai/reranker/). Chunks scoring far below the best hit are dropped (relative threshold), trimming the context to the smallest useful set (max 8).
+The ~20 candidates are rescored against the question by the [Jina AI reranker](https://jina.ai/reranker/). Chunks scoring far below the best hit are dropped (**relative** threshold — Jina scores vary by repo), trimming the context to the smallest useful set (max 8).
 
 ### 6. Generate
 
@@ -67,41 +73,22 @@ RepoGuide uses JWT access tokens (15-minute expiry) with **rotating refresh toke
 ## Current Architecture
 
 ```text
-GitHub Repository                 Next.js frontend
-        │                                │
-        ▼                                ▼
- GitHub API / ZIP                 Fetch / POST (+ JWT)
-        │                                │
-        ▼                                ▼
- File Filtering                    FastAPI API
-        │                           (main.py)
-        ▼                                │
-  Code Chunking                           │
-        │                                ▼
-        ▼                           RAG pipeline
- Local Embeddings                   (rag.py)
- (all-MiniLM-L6-v2)                      │
-        │                                │
-        ▼                                ▼
-pgvector                    JWT auth + ownership
-    (chunks/vectors)            (auth.py, models.py)
-        │                                │
-        │                                ▼
-        │                        PostgreSQL
-        │                    (users, repos, conversations,
-        │                     messages, sources, refresh)
-        │                                │
-        ▼                                ▼
- Semantic Retrieval                  /api/chat
-        │                                │
-        ▼                                ▼
- Neighbor Expansion            Answer + Sources
-        │
-        ▼
- Jina Reranking
-        │
-        ▼
-  Gemini LLM
+Indexing:                       Answering:
+                                
+GitHub Repo                      Next.js frontend ──► FastAPI (main.py) ──► RAG (rag.py)
+  │  │                             │  JWT auth + ownership (auth.py)
+  ▼  │                             ▼
+download ZIP ──► file filter   ask(): 3 searches in parallel
+  ▼                                │  • vector search (pgvector)
+chunk (line numbers)               │  • keyword search (tsvector FTS)
+  ▼                                │  • filename match
+embed (all-MiniLM-L6-v2)           ▼
+  ▼                             RRF fusion ──► neighbor expansion ──► Jina rerank (max 20)
+PostgreSQL + pgvector               ▼
+  (chunks + vectors)            Gemini LLM ──► answer + app-built GitHub source links
+                                   ▼
+                              PostgreSQL (conversations, messages, sources,
+                              users, repos, refresh tokens)
 ```
 
 FastAPI provides the API layer between the Next.js application and the RAG pipeline. PostgreSQL stores code chunks and vectors (pgvector) plus all application state.
@@ -112,6 +99,8 @@ FastAPI provides the API layer between the Next.js application and the RAG pipel
 * **Python** + **FastAPI**
 * **PostgreSQL** (SQLAlchemy async + Alembic) — users, repositories, conversations, messages, refresh tokens
 * **pgvector** — vector storage for code chunks (HNSW index)
+* **PostgreSQL full-text search** — weighted `tsvector` (file path + content) for keyword search
+* **Hybrid retrieval** — vector + full-text + filename, fused by reciprocal rank fusion (RRF)
 * **Google Gemini** — answer generation (`gemini-2.5-flash`)
 * **sentence-transformers** — local embeddings (`all-MiniLM-L6-v2`)
 * **Jina AI Reranker** — cross-encoder relevance reranking
@@ -211,7 +200,7 @@ Content-Type: application/json
 { "url": "https://github.com/owner/repo", "question": "How does authentication work?", "conversation_id": 0 }
 ```
 
-`conversation_id: 0` creates a new conversation; pass an existing id to continue it. Embeds the (possibly rewritten) question, retrieves + expands + reranks chunks, generates an answer, and persists the messages.
+`conversation_id: 0` creates a new conversation; pass an existing id to continue it. Embeds the (possibly rewritten) question, runs hybrid retrieval (vector + full-text + filename, RRF-fused), expands and reranks chunks, generates an answer, and persists the messages.
 
 **Response:**
 ```json
@@ -250,9 +239,9 @@ GET /api/messages/{conversation_id}   # messages + sources (ownership-checked)
 * Language-aware code chunking with line-number metadata
 * Local embeddings via sentence-transformers
 * pgvector vector storage (HNSW index)
-* Repository-scoped semantic retrieval with per-user access control
+* Repository-scoped **hybrid retrieval** — semantic (pgvector) + full-text (tsvector) + filename match, RRF-fused, so both "how does auth work" and "show me render.yaml" succeed
 * Same-file neighbor expansion around retrieved chunks
-* **Jina AI reranking** with a relative relevance threshold (top 8 context)
+* **Jina AI reranking** (pool capped at 20) with a **relative** relevance threshold (top 8 context)
 * Conversation-aware retrieval — history summaries + follow-up resolution
 * RAG-based code explanations from Gemini
 * Source links anchored to a commit SHA with exact line ranges (LLM never invents them)
@@ -275,7 +264,7 @@ RepoGuide/
 │   ├── file_filter.py      # keep source files, drop noise
 │   ├── chunking.py         # language-aware chunking with line numbers
 │   ├── embeddings.py       # local sentence-transformers embeddings
-│   ├── vector_storage.py   # pgvector add/query/get
+│   ├── vector_storage.py   # pgvector add/query + FTS keyword + filename match
 │   ├── reranking.py        # Jina AI reranker
 │   ├── llm.py              # Gemini answer generation + conversation summary
 │   ├── prompts.py          # system prompt + prompt builder
@@ -316,7 +305,7 @@ RepoGuide/
 
 ## Development Status
 
-Pipeline is complete end-to-end: index → store → retrieve → expand → rerank → generate → sources, with JWT auth, PostgreSQL persistence, conversations, and a full Next.js frontend.
+Pipeline is complete end-to-end: index → store → hybrid retrieve (vector + FTS + filename) → expand → rerank → generate → sources, with JWT auth, PostgreSQL persistence, conversations, and a full Next.js frontend.
 
 ### Know limitations
 
