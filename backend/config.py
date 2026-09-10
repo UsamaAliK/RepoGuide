@@ -18,6 +18,4 @@ class Settings():
   EMBEDDING_MAX_CONCURRENCY=1
   LLM_MODEL = "gemini-2.5-flash"
 
-  CHROMA_PERSIST_DIR = "./chroma_db"
-
 settings = Settings()
