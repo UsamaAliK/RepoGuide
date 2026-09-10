@@ -293,7 +293,6 @@ desktop.ini
 .pnpm-store/
 
 # RepoGuide
-chroma_db/
 node_modules/
 .next/
 out/

@@ -1,5 +1,4 @@
 import asyncio
-import os
 import shutil
 from .reranking import rerank
 import json
@@ -80,7 +79,7 @@ async def index_repo(url:str)->dict:
     vectors=await embed_text(texts)
     if not vectors or len(vectors) != len(chunks) or not all(len(v) == settings.EMBEDDING_DIMENSIONS for v in vectors):
         raise ValueError(f"Embedding count/dimension mismatch: {len(chunks)} chunks vs {len(vectors)} vectors")
-    await asyncio.to_thread(add_chunks, chunks, vectors)
+    await add_chunks(chunks, vectors)
 
     return {
         "owner": owner,
@@ -93,7 +92,7 @@ async def index_repo(url:str)->dict:
 
 # --- neighbor expansion: grab before + after chunk per initial result ---
 
-def find_neighbors(initial_metas:list[dict],owner:str,repo:str):
+async def find_neighbors(initial_metas:list[dict],owner:str,repo:str):
     """For each initial chunk, fetch the nearest chunk before and after in the same file.
 
     Adjacency is judged by line numbers with a max gap of 50 lines.
@@ -104,7 +103,7 @@ def find_neighbors(initial_metas:list[dict],owner:str,repo:str):
     added_keys = set()
     for m in initial_metas:
         # get all chunks for this file from chroma
-        docs, metas = get_file_chunks(owner, repo, m["file_path"])
+        docs, metas = await get_file_chunks(owner, repo, m["file_path"])
         if not docs:
             continue
         cur = (m["start_line"], m["end_line"])
@@ -155,16 +154,12 @@ async def ask(question: str, url: str, top_k: int = TOP_K, history: list[dict] |
     )
 
     # semantic search — top-k most similar chunks
-    docs, metas, distances = await asyncio.to_thread(
-        query_chunks, owner, repo, qvec, top_k
-    )
+    docs, metas, distances = await query_chunks(owner, repo, qvec, top_k)
     if not docs:
         return {"answer": "No matching code found in this repository.", "sources": []}
 
     # expand with same-file neighbors (before + after per chunk)
-    n_docs, n_metas = await asyncio.to_thread(
-        find_neighbors, metas, owner, repo
-    )
+    n_docs, n_metas = await find_neighbors(metas, owner, repo)
     docs = docs + n_docs
     metas = metas + n_metas
     all_distances = list(distances) + [0] * len(n_docs)
