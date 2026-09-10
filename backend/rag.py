@@ -9,9 +9,11 @@ from .llm import generate_answer
 from .github import download_repo_zip,parse_github_url,get_repo_metadata
 from .chunking import chunk_files
 from .embeddings import embed_text,embed_batch
-from .vector_storage import add_chunks,query_chunks,get_file_chunks
+from .vector_storage import add_chunks,query_chunks,get_files_chunks,keyword_search,match_file_paths
 
-TOP_K=15
+TOP_K=10
+MAX_RERANK=20
+RRF_K=60
 
 MIN_SCORE=0.15
 
@@ -53,6 +55,26 @@ def latest_commit_sha(owner: str, repo: str, branch: str) -> str:
         f"https://api.github.com/repos/{owner}/{repo}/commits/{branch}"
     ) as r:
         return json.load(r)["sha"]
+
+
+def rrf_fuse(groups: list[tuple[list, list]]) -> tuple[list, list]:
+    """Reciprocal Rank Fusion of ranked (docs, metas) candidate lists.
+
+    Each group contributes score 1/(RRF_K + rank) per chunk, so a result that
+    both vector search AND keyword search rank highly fuses to the top. A chunk
+    found by only one method can still be first-placed by one list alone, so
+    hybrid search never rejects either retrieval path.
+    """
+    scores: dict[tuple, float] = {}
+    index: dict[tuple, tuple] = {}
+    for docs, metas in groups:
+        for rank, (d, m) in enumerate(zip(docs, metas), start=1):
+            key = (m["file_path"], m["start_line"], m["end_line"])
+            scores[key] = scores.get(key, 0.0) + 1.0 / (RRF_K + rank)
+            if key not in index:
+                index[key] = (d, m)
+    ordered = sorted(scores, key=scores.get, reverse=True)
+    return [index[k][0] for k in ordered], [index[k][1] for k in ordered]
 
 # --- indexing pipeline: URL → metadata → download → filter → chunk → embed → store ---
 
@@ -96,14 +118,17 @@ async def find_neighbors(initial_metas:list[dict],owner:str,repo:str):
     """For each initial chunk, fetch the nearest chunk before and after in the same file.
 
     Adjacency is judged by line numbers with a max gap of 50 lines.
+    All needed files are fetched in ONE batched query upfront.
     Deduplicates across all initial chunks so a neighbor is only added once.
     Returns added chunk docs/metas.
     """
+    unique_paths = list(dict.fromkeys(m["file_path"] for m in initial_metas))
+    by_file = await get_files_chunks(owner, repo, unique_paths)
+
     added_docs, added_metas = [], []
     added_keys = set()
     for m in initial_metas:
-        # get all chunks for this file from chroma
-        docs, metas = await get_file_chunks(owner, repo, m["file_path"])
+        docs, metas = by_file.get(m["file_path"], ([], []))
         if not docs:
             continue
         cur = (m["start_line"], m["end_line"])
@@ -140,21 +165,28 @@ async def find_neighbors(initial_metas:list[dict],owner:str,repo:str):
                 added_metas.append(metas[idx])
     return added_docs, added_metas
 
-# --- query pipeline: embed question → search chroma → neighbors → LLM → answer + sources ---
+# --- query pipeline: embed question → hybrid search (vector + FTS, RRF) → neighbors → rerank → LLM → answer + sources ---
 
 async def ask(question: str, url: str, top_k: int = TOP_K, history: list[dict] | None = None) -> dict:
     info = parse_github_url(url)
     owner, repo = info["owner"], info["repo"]
 
-    # embed a search query built from the original question (the LLM still
-    # sees the original question — the combined query is only for search)
+    # HYBRID retrieval: three ranked lists fused by RRF —
+    #   semantic (vector)      — meaning, paraphrases
+    #   lexical (content FTS)  — exact/rare identifiers in code
+    #   filename match         — explicitly named files (render.yaml)
     search_query = build_search_query(question, history)
     qvec = await asyncio.to_thread(
         lambda: embed_batch([search_query])[0]
     )
 
-    # semantic search — top-k most similar chunks
-    docs, metas, distances = await query_chunks(owner, repo, qvec, top_k)
+    v_docs, v_metas, _ = await query_chunks(owner, repo, qvec, top_k)
+    k_docs, k_metas = await keyword_search(owner, repo, search_query, top_k)
+    f_docs, f_metas = await match_file_paths(owner, repo, search_query, top_k)
+
+    docs, metas = rrf_fuse([(v_docs, v_metas), (k_docs, k_metas), (f_docs, f_metas)])
+    distances = [0.0] * len(docs)
+
     if not docs:
         return {"answer": "No matching code found in this repository.", "sources": []}
 
@@ -176,6 +208,12 @@ async def ask(question: str, url: str, top_k: int = TOP_K, history: list[dict] |
     docs = [d for d, _, _ in deduped]
     metas = [m for _, m, _ in deduped]
     deduped_distances = [dist for _, _, dist in deduped]
+
+    # cap the rerank pool — Jina handles ~20 docs comfortably; beyond that it's
+    # slow/429-prone and the extra low-rank chunks barely change the top-8.
+    docs = docs[:MAX_RERANK]
+    metas = metas[:MAX_RERANK]
+    deduped_distances = deduped_distances[:MAX_RERANK]
 
     # Score ALL candidates (neighbors included) with Jina, then keep only those
     # above the relevance threshold (capped at 8) for the LLM context.
