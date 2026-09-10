@@ -36,7 +36,7 @@ Each chunk is stored with metadata:
 * Repository (owner + repo)
 * Commit SHA (so source links stay valid as branches move)
 
-The chunks are embedded with a local model (`all-MiniLM-L6-v2`, 384-dim) and stored in ChromaDB, keyed by owner/repo.
+The chunks are embedded with a local model (`all-MiniLM-L6-v2`, 384-dim) and stored in PostgreSQL (pgvector), keyed by owner/repo.
 
 ### 3. Ask
 
@@ -83,8 +83,8 @@ GitHub Repository                 Next.js frontend
  (all-MiniLM-L6-v2)                      │
         │                                │
         ▼                                ▼
-    ChromaDB                    JWT auth + ownership
-    (chunks/vectors)             (auth.py, models.py)
+pgvector                    JWT auth + ownership
+    (chunks/vectors)            (auth.py, models.py)
         │                                │
         │                                ▼
         │                        PostgreSQL
@@ -104,14 +104,14 @@ GitHub Repository                 Next.js frontend
   Gemini LLM
 ```
 
-FastAPI provides the API layer between the Next.js application and the RAG pipeline. ChromaDB stores code chunks and vectors; PostgreSQL stores all application state.
+FastAPI provides the API layer between the Next.js application and the RAG pipeline. PostgreSQL stores code chunks and vectors (pgvector) plus all application state.
 
 ## Tech Stack
 
 ### Backend
 * **Python** + **FastAPI**
 * **PostgreSQL** (SQLAlchemy async + Alembic) — users, repositories, conversations, messages, refresh tokens
-* **ChromaDB** — vector storage for code chunks
+* **pgvector** — vector storage for code chunks (HNSW index)
 * **Google Gemini** — answer generation (`gemini-2.5-flash`)
 * **sentence-transformers** — local embeddings (`all-MiniLM-L6-v2`)
 * **Jina AI Reranker** — cross-encoder relevance reranking
@@ -138,7 +138,7 @@ FastAPI provides the API layer between the Next.js application and the RAG pipel
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 cp .env.example .env   # set secrets (see Environment Variables below)
 alembic -c backend/alembic.ini upgrade head
 uvicorn backend.main:app --reload
@@ -249,7 +249,7 @@ GET /api/messages/{conversation_id}   # messages + sources (ownership-checked)
 * File filtering — source/config/docs kept; build/vendor/IDE/lockfiles ignored
 * Language-aware code chunking with line-number metadata
 * Local embeddings via sentence-transformers
-* ChromaDB vector storage
+* pgvector vector storage (HNSW index)
 * Repository-scoped semantic retrieval with per-user access control
 * Same-file neighbor expansion around retrieved chunks
 * **Jina AI reranking** with a relative relevance threshold (top 8 context)
@@ -275,11 +275,12 @@ RepoGuide/
 │   ├── file_filter.py      # keep source files, drop noise
 │   ├── chunking.py         # language-aware chunking with line numbers
 │   ├── embeddings.py       # local sentence-transformers embeddings
-│   ├── vector_storage.py   # ChromaDB add/query/get
+│   ├── vector_storage.py   # pgvector add/query/get
 │   ├── reranking.py        # Jina AI reranker
 │   ├── llm.py              # Gemini answer generation + conversation summary
 │   ├── prompts.py          # system prompt + prompt builder
 │   ├── rag.py              # index + ask pipelines
+│   ├── requirements.txt
 │   └── alembic/            # database migrations
 │
 ├── frontend/
@@ -300,7 +301,6 @@ RepoGuide/
 │   │   └── utils/repository.ts
 │   └── types/api.ts
 │
-├── requirements.txt
 └── README.md
 ```
 
@@ -321,12 +321,10 @@ Pipeline is complete end-to-end: index → store → retrieve → expand → rer
 ### Know limitations
 
 * **Embedding speed** — embeddings run locally on CPU; large repos index slowly
-* **ChromaDB on deploy targets** — the vector store is a local directory; a hosted/persistent vector DB (e.g. pgvector) is planned for production
 * **Single embedding stack** — query and index embeddings must use the same model
 
 ### Planned improvements
 
 * Deploy production backend and frontend (Render / Vercel)
-* Move vector storage to pgvector (PostgreSQL) so vectors persist without local disk
 * Hosted embedding API for faster, quota-managed indexing
 * Fine-tuned retrieval for harder, more abstract questions
