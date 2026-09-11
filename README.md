@@ -23,11 +23,11 @@ RepoGuide uses Retrieval-Augmented Generation (RAG) designed for codebase unders
 
 The user provides a GitHub repository URL.
 
-RepoGuide downloads the repository archive to a temporary directory, filters it to source/config/docs files (skipping build output, vendor directories, and lockfiles), chunks the code, embeds it into a vector store, and **deletes the temporary files** — nothing is kept on disk after indexing.
+RepoGuide shallow-clones the repository (`git clone --depth 1`), filters it to source/config/docs files (skipping build output, vendor directories, and lockfiles), chunks the code, embeds it into a vector store, and **deletes the temporary clone directory** — nothing is kept on disk after indexing.
 
 ### 2. Chunk & Embed
 
-Source files are split into code-aware chunks (language-aware splitting where supported).
+Source files are split into fixed-size chunks (size scales with repo: 1300–3000 chars). Overlap ensures context isn't lost at boundaries.
 
 Each chunk is stored with metadata:
 
@@ -78,7 +78,7 @@ Indexing:                       Answering:
 GitHub Repo                      Next.js frontend ──► FastAPI (main.py) ──► RAG (rag.py)
   │  │                             │  JWT auth + ownership (auth.py)
   ▼  │                             ▼
-download ZIP ──► file filter   ask(): 3 searches in parallel
+shallow clone ──► file filter   ask(): 3 searches in parallel
   ▼                                │  • vector search (pgvector)
 chunk (line numbers)               │  • keyword search (tsvector FTS)
   ▼                                │  • filename match
@@ -105,8 +105,8 @@ FastAPI provides the API layer between the Next.js application and the RAG pipel
 * **sentence-transformers** — local embeddings (`all-MiniLM-L6-v2`)
 * **Jina AI Reranker** — cross-encoder relevance reranking
 * **JWT** (PyJWT + bcrypt) — access + rotating refresh tokens
-* **LangChain Text Splitters** — language-aware chunking
-* **GitHub REST API** — metadata, commit SHA, ZIP download
+* **LangChain Text Splitters** — chunking (size scales with repo)
+* **GitHub REST API** — metadata, commit SHA; repos fetched via shallow `git clone`
 
 ### Frontend
 * **Next.js 15** (App Router) + **React 19**
@@ -118,6 +118,7 @@ FastAPI provides the API layer between the Next.js application and the RAG pipel
 ### Prerequisites
 * Python 3.12
 * Node.js (18+)
+* `git` (for shallow-cloning repositories)
 * PostgreSQL (local dev) or a hosted instance (Supabase/Render)
 * A [Google Gemini API key](https://aistudio.google.com/) (`GEMINI_API_KEY`)
 * A [Jina AI API key](https://jina.ai/api-dashboard/) (`JINA_API_KEY`)
@@ -179,7 +180,7 @@ Content-Type: application/json
 { "url": "https://github.com/owner/repo" }
 ```
 
-Downloads, filters, chunks, embeds, and stores a repository. If the repo was already indexed by anyone and its commit SHA is unchanged, the existing index is reused and just linked to the current user.
+Downloads (shallow clone), filters, chunks, embeds, and stores a repository. If the repo was already indexed by anyone and its commit SHA is unchanged, the existing index is reused and just linked to the current user.
 
 **Response:**
 ```json
@@ -236,7 +237,7 @@ GET /api/messages/{conversation_id}   # messages + sources (ownership-checked)
 * Account registration, login, and logout (JWT access + rotating refresh tokens)
 * GitHub repository ingestion (metadata, default branch, commit SHA)
 * File filtering — source/config/docs kept; build/vendor/IDE/lockfiles ignored
-* Language-aware code chunking with line-number metadata
+* Repo-size-aware chunking with overlap and line-number metadata
 * Local embeddings via sentence-transformers
 * pgvector vector storage (HNSW index)
 * Repository-scoped **hybrid retrieval** — semantic (pgvector) + full-text (tsvector) + filename match, RRF-fused, so both "how does auth work" and "show me render.yaml" succeed
@@ -260,9 +261,9 @@ RepoGuide/
 │   ├── auth.py             # JWT + bcrypt + rotating refresh tokens
 │   ├── database.py         # async SQLAlchemy engine/session
 │   ├── models.py           # ORM models (User, Repository, Conversation, ...)
-│   ├── github.py           # GitHub API / ZIP download
+│   ├── github.py           # GitHub API + shallow clone
 │   ├── file_filter.py      # keep source files, drop noise
-│   ├── chunking.py         # language-aware chunking with line numbers
+│   ├── chunking.py         # repo-size-aware chunking with line numbers
 │   ├── embeddings.py       # local sentence-transformers embeddings
 │   ├── vector_storage.py   # pgvector add/query + FTS keyword + filename match
 │   ├── reranking.py        # Jina AI reranker
