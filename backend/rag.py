@@ -6,7 +6,7 @@ from .config import settings
 import urllib.request
 import re
 from .llm import generate_answer
-from .github import download_repo_zip,parse_github_url,get_repo_metadata
+from .github import download_repo,parse_github_url,get_repo_metadata
 from .chunking import chunk_files, chunk_size_for_repo
 from .embeddings import embed_text,embed_batch
 from .vector_storage import add_chunks,query_chunks,get_files_chunks,keyword_search,match_file_paths
@@ -86,7 +86,7 @@ async def index_repo(url:str)->dict:
     branch=meta["default_branch"]
     size_kb=meta["size_kb"]
     chunk_size,chunk_overlap=chunk_size_for_repo(size_kb)
-    downloaded=await download_repo_zip(owner,repo,branch)
+    downloaded=await download_repo(owner,repo,branch)
     temp_dir=downloaded["temp_dir"]
     files=downloaded["filtered files"]
     if not files:
