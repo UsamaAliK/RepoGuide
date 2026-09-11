@@ -1,11 +1,13 @@
+import asyncio
 import httpx
-import zipfile
+import subprocess
 import tempfile
+import shutil
 import os
 from fastapi import HTTPException
 from .file_filter import filter_files
 
-# --- GitHub API + ZIP download helpers ---
+# --- GitHub API + clone helpers ---
 
 def parse_github_url(github_url: str) -> dict:
     """extract owner and repo name from url"""
@@ -39,33 +41,28 @@ async def get_repo_metadata(owner: str, repo: str) -> dict:
             )
 
 
-async def download_repo_zip(owner: str, repo: str, branch: str) -> dict:
-    """download repository as zipball, unpack it, and return local file paths
+async def download_repo(owner: str, repo: str, branch: str) -> dict:
+    """shallow-clone the repo at its latest commit and return local file paths
 
-    returns dict: {"root": <dir>, "files": [list of file paths]}
+    returns dict: {"root": <dir>, "files": [list of file paths], "temp_dir": ...}
     """
-    url = f"https://github.com/{owner}/{repo}/archive/refs/heads/{branch}.zip"
-
     temp_dir = tempfile.mkdtemp()
-    zip_path = os.path.join(temp_dir, f"{repo}.zip")
+    url = f"https://github.com/{owner}/{repo}.git"
 
-    async with httpx.AsyncClient(follow_redirects=True) as client:
-        async with client.stream("GET", url) as response:
-            response.raise_for_status()
-
-            with open(zip_path, "wb") as file:
-                async for chunk in response.aiter_bytes():
-                    file.write(chunk)
-
-    with zipfile.ZipFile(zip_path, "r") as z:
-        z.extractall(temp_dir)
-
-    # zipball extracts to a folder like {repo}-{branch}
-    root = os.path.join(
-        temp_dir,
-        [d for d in os.listdir(temp_dir) if os.path.isdir(os.path.join(temp_dir, d))][0]
-
+    proc = await asyncio.to_thread(
+        subprocess.run,
+        ["git", "clone", "--depth", "1", "--single-branch", "--branch", branch, url, temp_dir],
+        capture_output=True,
+        text=True,
     )
+    if proc.returncode != 0:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to clone repository: {proc.stderr.strip()}",
+        )
+
+    root = temp_dir
 
     file_paths = []
 
