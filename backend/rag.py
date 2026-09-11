@@ -7,7 +7,7 @@ import urllib.request
 import re
 from .llm import generate_answer
 from .github import download_repo_zip,parse_github_url,get_repo_metadata
-from .chunking import chunk_files
+from .chunking import chunk_files, chunk_size_for_repo
 from .embeddings import embed_text,embed_batch
 from .vector_storage import add_chunks,query_chunks,get_files_chunks,keyword_search,match_file_paths
 
@@ -84,6 +84,8 @@ async def index_repo(url:str)->dict:
     repo=info["repo"]
     meta=await get_repo_metadata(owner,repo)
     branch=meta["default_branch"]
+    size_kb=meta["size_kb"]
+    chunk_size,chunk_overlap=chunk_size_for_repo(size_kb)
     downloaded=await download_repo_zip(owner,repo,branch)
     temp_dir=downloaded["temp_dir"]
     files=downloaded["filtered files"]
@@ -92,7 +94,7 @@ async def index_repo(url:str)->dict:
         raise ValueError("No filterable file found in this repo")
     try:
         commit_sha= await asyncio.to_thread(latest_commit_sha,owner,repo,branch)
-        chunks= await asyncio.to_thread(chunk_files,files,commit_sha,owner,repo)
+        chunks= await asyncio.to_thread(chunk_files,files,commit_sha,owner,repo,chunk_size,chunk_overlap)
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
     if not chunks:
@@ -110,6 +112,7 @@ async def index_repo(url:str)->dict:
         "commit_sha": commit_sha,
         "file_count": len(files),
         "chunk_count": len(chunks),
+        "chunk_size": chunk_size,
     }
 
 # --- neighbor expansion: grab before + after chunk per initial result ---
